@@ -4,7 +4,7 @@ import { Password, PasswordCategory, PermissionGroup } from './PasswordVault';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Eye, EyeOff, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface PasswordListProps {
@@ -109,12 +109,29 @@ const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, grou
                         <Copy className="h-5 w-5" />
                       )}
                     </Button>
+                    {password.url && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-gray-100 text-teal-700"
+                        asChild
+                      >
+                        <a href={password.url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-5 w-5" />
+                        </a>
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="mt-2">
                   <div className="font-mono bg-gray-50 p-2 rounded border border-gray-200">
                     {visiblePasswords[password.id] ? password.password : '••••••••'}
                   </div>
+                  {password.url && (
+                    <div className="mt-1 text-xs text-gray-500 overflow-hidden text-ellipsis">
+                      <span className="font-medium">URL:</span> {password.url}
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
