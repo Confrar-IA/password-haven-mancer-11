@@ -4,17 +4,16 @@ import { Password, PasswordCategory, PermissionGroup } from './PasswordVault';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Copy, Check, ExternalLink, Trash } from 'lucide-react';
+import { Eye, EyeOff, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface PasswordListProps {
   passwords: Password[];
   categories: PasswordCategory[];
   groups: PermissionGroup[];
-  onDelete: (id: string) => void;
 }
 
-const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, groups, onDelete }) => {
+const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, groups }) => {
   const [visiblePasswords, setVisiblePasswords] = useState<{[key: string]: boolean}>({});
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
 
@@ -122,14 +121,6 @@ const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, grou
                         </a>
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-red-100 text-red-500"
-                      onClick={() => onDelete(password.id)}
-                    >
-                      <Trash className="h-5 w-5" />
-                    </Button>
                   </div>
                 </div>
                 <div className="mt-2">
