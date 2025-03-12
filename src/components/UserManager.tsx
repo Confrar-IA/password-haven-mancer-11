@@ -20,7 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CheckboxItem, CheckboxGroup } from "./CheckboxGroup";
-import { Plus, UserPlus, Shield, X } from 'lucide-react';
+import { Plus, UserPlus, Shield, X, Edit, Trash, Save } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface UserManagerProps {
@@ -43,11 +43,14 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     description: ''
   });
 
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingGroup, setEditingGroup] = useState<PermissionGroup | null>(null);
+
   const handleAddUser = () => {
     if (!newUser.username || !newUser.fullName) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
         variant: "destructive",
       });
       return;
@@ -61,16 +64,34 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     setUsers([...users, userEntry]);
     setNewUser({ username: '', fullName: '', role: 'user', groups: [] });
     toast({
-      title: "Success",
-      description: "User added successfully"
+      title: "Sucesso",
+      description: "Usuário adicionado com sucesso"
+    });
+  };
+
+  const handleEditUser = () => {
+    if (!editingUser || !editingUser.username || !editingUser.fullName) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUsers(users.map(user => user.id === editingUser.id ? editingUser : user));
+    setEditingUser(null);
+    toast({
+      title: "Sucesso",
+      description: "Usuário atualizado com sucesso"
     });
   };
 
   const handleAddGroup = () => {
     if (!newGroup.name) {
       toast({
-        title: "Error",
-        description: "Please provide a group name",
+        title: "Erro",
+        description: "Por favor, forneça um nome para o grupo",
         variant: "destructive",
       });
       return;
@@ -84,24 +105,53 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     setGroups([...groups, groupEntry]);
     setNewGroup({ name: '', description: '' });
     toast({
-      title: "Success",
-      description: "Group added successfully"
+      title: "Sucesso",
+      description: "Grupo adicionado com sucesso"
+    });
+  };
+
+  const handleEditGroup = () => {
+    if (!editingGroup || !editingGroup.name) {
+      toast({
+        title: "Erro",
+        description: "Por favor, forneça um nome para o grupo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGroups(groups.map(group => group.id === editingGroup.id ? editingGroup : group));
+    setEditingGroup(null);
+    toast({
+      title: "Sucesso",
+      description: "Grupo atualizado com sucesso"
     });
   };
 
   const handleRemoveUser = (userId: string) => {
     setUsers(users.filter(user => user.id !== userId));
     toast({
-      title: "Success",
-      description: "User removed successfully"
+      title: "Sucesso",
+      description: "Usuário removido com sucesso"
     });
   };
 
   const handleRemoveGroup = (groupId: string) => {
+    // Check if any users are using this group
+    const usersWithGroup = users.filter(user => user.groups.includes(groupId));
+    if (usersWithGroup.length > 0) {
+      toast({
+        title: "Erro",
+        description: `Não é possível excluir: ${usersWithGroup.length} usuários pertencem a este grupo`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setGroups(groups.filter(group => group.id !== groupId));
     toast({
-      title: "Success",
-      description: "Group removed successfully"
+      title: "Sucesso",
+      description: "Grupo removido com sucesso"
     });
   };
 
@@ -123,68 +173,96 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="users" className="flex items-center gap-2">
           <UserPlus className="h-4 w-4" />
-          Users
+          Usuários
         </TabsTrigger>
         <TabsTrigger value="groups" className="flex items-center gap-2">
           <Shield className="h-4 w-4" />
-          Permission Groups
+          Grupos de Permissão
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="users" className="space-y-4 mt-4">
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">Add New User</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {editingUser ? "Editar Usuário" : "Adicionar Novo Usuário"}
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Nome de Usuário</Label>
                 <Input
                   id="username"
-                  placeholder="Username"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                  placeholder="Nome de Usuário"
+                  value={editingUser ? editingUser.username : newUser.username}
+                  onChange={(e) => editingUser 
+                    ? setEditingUser({...editingUser, username: e.target.value})
+                    : setNewUser({...newUser, username: e.target.value})
+                  }
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">Nome Completo</Label>
                 <Input
                   id="fullName"
-                  placeholder="Full Name"
-                  value={newUser.fullName}
-                  onChange={(e) => setNewUser({...newUser, fullName: e.target.value})}
+                  placeholder="Nome Completo"
+                  value={editingUser ? editingUser.fullName : newUser.fullName}
+                  onChange={(e) => editingUser
+                    ? setEditingUser({...editingUser, fullName: e.target.value})
+                    : setNewUser({...newUser, fullName: e.target.value})
+                  }
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role">Função</Label>
                 <Select
-                  value={newUser.role}
-                  onValueChange={(value: 'admin' | 'user') => setNewUser({...newUser, role: value})}
+                  value={editingUser ? editingUser.role : newUser.role}
+                  onValueChange={(value: 'admin' | 'user') => editingUser
+                    ? setEditingUser({...editingUser, role: value})
+                    : setNewUser({...newUser, role: value})
+                  }
                 >
                   <SelectTrigger id="role">
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder="Selecionar função" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Administrator</SelectItem>
-                    <SelectItem value="user">Regular User</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="user">Usuário Regular</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Access Groups</Label>
+                <Label>Grupos de Acesso</Label>
                 <div className="border rounded-md p-3 space-y-2">
                   <CheckboxGroup>
                     {groups.map(group => (
                       <CheckboxItem
                         key={group.id}
-                        checked={newUser.groups.includes(group.id)}
+                        checked={editingUser 
+                          ? editingUser.groups.includes(group.id)
+                          : newUser.groups.includes(group.id)
+                        }
                         onCheckedChange={(checked) => {
-                          if (checked) {
-                            setNewUser({...newUser, groups: [...newUser.groups, group.id]});
+                          if (editingUser) {
+                            if (checked) {
+                              setEditingUser({
+                                ...editingUser, 
+                                groups: [...editingUser.groups, group.id]
+                              });
+                            } else {
+                              setEditingUser({
+                                ...editingUser, 
+                                groups: editingUser.groups.filter(g => g !== group.id)
+                              });
+                            }
                           } else {
-                            setNewUser({...newUser, groups: newUser.groups.filter(g => g !== group.id)});
+                            if (checked) {
+                              setNewUser({...newUser, groups: [...newUser.groups, group.id]});
+                            } else {
+                              setNewUser({...newUser, groups: newUser.groups.filter(g => g !== group.id)});
+                            }
                           }
                         }}
                       >
@@ -195,10 +273,32 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
                 </div>
               </div>
 
-              <Button onClick={handleAddUser} className="mt-4 col-span-2">
-                <Plus className="h-4 w-4 mr-2" />
-                Add User
-              </Button>
+              <div className="mt-4 col-span-2 flex justify-end gap-2">
+                {editingUser && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingUser(null)}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+                <Button 
+                  onClick={editingUser ? handleEditUser : handleAddUser}
+                  className="bg-teal-700 hover:bg-teal-800"
+                >
+                  {editingUser ? (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Atualizar Usuário
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Usuário
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -206,23 +306,15 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {users.map(user => (
             <Card key={user.id} className="relative overflow-hidden">
-              <Button 
-                variant="destructive" 
-                size="icon" 
-                className="absolute right-2 top-2 h-8 w-8 rounded-full z-10"
-                onClick={() => handleRemoveUser(user.id)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
               <CardContent className="pt-6">
                 <h3 className="font-semibold text-lg">{user.fullName}</h3>
                 <p className="text-sm text-gray-500">@{user.username}</p>
                 <Badge className="mt-1" variant={user.role === 'admin' ? 'default' : 'outline'}>
-                  {user.role === 'admin' ? 'Administrator' : 'User'}
+                  {user.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </Badge>
                 
                 <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">Access Groups:</h4>
+                  <h4 className="text-sm font-medium mb-2">Grupos de Acesso:</h4>
                   <div className="flex flex-wrap gap-2">
                     {groups.map(group => (
                       <Badge 
@@ -236,6 +328,25 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
                     ))}
                   </div>
                 </div>
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setEditingUser(user)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => handleRemoveUser(user.id)}
+                  >
+                    <Trash className="h-4 w-4 mr-1" />
+                    Excluir
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -245,32 +356,62 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       <TabsContent value="groups" className="space-y-4 mt-4">
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-lg font-semibold mb-4">Add New Permission Group</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {editingGroup ? "Editar Grupo de Permissão" : "Adicionar Novo Grupo de Permissão"}
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="groupName">Group Name</Label>
+                <Label htmlFor="groupName">Nome do Grupo</Label>
                 <Input
                   id="groupName"
-                  placeholder="Group Name"
-                  value={newGroup.name}
-                  onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
+                  placeholder="Nome do Grupo"
+                  value={editingGroup ? editingGroup.name : newGroup.name}
+                  onChange={(e) => editingGroup
+                    ? setEditingGroup({...editingGroup, name: e.target.value})
+                    : setNewGroup({...newGroup, name: e.target.value})
+                  }
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="groupDescription">Description</Label>
+                <Label htmlFor="groupDescription">Descrição</Label>
                 <Input
                   id="groupDescription"
-                  placeholder="Description"
-                  value={newGroup.description}
-                  onChange={(e) => setNewGroup({...newGroup, description: e.target.value})}
+                  placeholder="Descrição"
+                  value={editingGroup ? editingGroup.description : newGroup.description}
+                  onChange={(e) => editingGroup
+                    ? setEditingGroup({...editingGroup, description: e.target.value})
+                    : setNewGroup({...newGroup, description: e.target.value})
+                  }
                 />
               </div>
 
-              <Button onClick={handleAddGroup} className="mt-4 col-span-2">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Group
-              </Button>
+              <div className="mt-4 col-span-2 flex justify-end gap-2">
+                {editingGroup && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingGroup(null)}
+                  >
+                    Cancelar
+                  </Button>
+                )}
+                <Button 
+                  onClick={editingGroup ? handleEditGroup : handleAddGroup} 
+                  className="bg-teal-700 hover:bg-teal-800"
+                >
+                  {editingGroup ? (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Atualizar Grupo
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Grupo
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -278,20 +419,12 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {groups.map(group => (
             <Card key={group.id} className="relative overflow-hidden">
-              <Button 
-                variant="destructive" 
-                size="icon" 
-                className="absolute right-2 top-2 h-8 w-8 rounded-full z-10"
-                onClick={() => handleRemoveGroup(group.id)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
               <CardContent className="pt-6">
                 <h3 className="font-semibold text-lg">{group.name}</h3>
                 <p className="text-sm text-gray-500">{group.description}</p>
                 
                 <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">Users with access:</h4>
+                  <h4 className="text-sm font-medium mb-2">Usuários com acesso:</h4>
                   <div className="flex flex-wrap gap-2">
                     {users
                       .filter(user => user.groups.includes(group.id))
@@ -301,6 +434,25 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
                         </Badge>
                       ))}
                   </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setEditingGroup(group)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => handleRemoveGroup(group.id)}
+                  >
+                    <Trash className="h-4 w-4 mr-1" />
+                    Excluir
+                  </Button>
                 </div>
               </CardContent>
             </Card>
