@@ -174,6 +174,14 @@ const PasswordVault = () => {
     });
   };
 
+  const handleDeletePassword = (id: string) => {
+    setPasswords(passwords.filter(password => password.id !== id));
+    toast({
+      title: "Sucesso",
+      description: "Senha excluída com sucesso",
+    });
+  };
+
   const handleAddCategory = () => {
     if (!newCategory.name || !newCategory.groupId) {
       toast({
@@ -194,6 +202,36 @@ const PasswordVault = () => {
     toast({
       title: "Sucesso",
       description: "Categoria adicionada com sucesso",
+    });
+  };
+  
+  const handleDeleteCategory = (id: string) => {
+    // Check if any passwords are using this category
+    const passwordsUsingCategory = passwords.filter(pw => pw.category === id);
+    if (passwordsUsingCategory.length > 0) {
+      toast({
+        title: "Erro",
+        description: `Não é possível excluir: ${passwordsUsingCategory.length} senhas usam esta categoria`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setCategories(categories.filter(cat => cat.id !== id));
+    setSelectedCategories(selectedCategories.filter(catId => catId !== id));
+    toast({
+      title: "Sucesso",
+      description: "Categoria excluída com sucesso",
+    });
+  };
+
+  const handleEditCategory = (category: PasswordCategory) => {
+    setCategories(categories.map(cat => 
+      cat.id === category.id ? category : cat
+    ));
+    toast({
+      title: "Sucesso",
+      description: "Categoria editada com sucesso",
     });
   };
 
@@ -256,6 +294,9 @@ const PasswordVault = () => {
             (selectedCategories.length === 0 || selectedCategories.includes(pass.category))
   );
 
+  // Estado para categoria sendo editada
+  const [editingCategory, setEditingCategory] = useState<PasswordCategory | null>(null);
+
   return (
     <div className="min-h-screen bg-teal-900 flex">
       <AppSidebar 
@@ -270,113 +311,188 @@ const PasswordVault = () => {
         <div className="max-w-6xl mx-auto space-y-6">
           <Card className="p-6 backdrop-blur-sm bg-white/95 shadow-lg border-0">
             <div className="flex flex-col space-y-4">
-              <TabsContent value="passwords" className={activeTab === "passwords" ? "block mt-4 space-y-4" : "hidden"}>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                    <Input
-                      placeholder="Pesquisar senhas..."
-                      className="pl-10 border-gray-200"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => setShowCategoryFilters(!showCategoryFilters)}
-                      variant="outline"
-                      className="gap-2 border-gray-200"
-                    >
-                      <Filter className="h-5 w-5" />
-                      Filtrar
-                    </Button>
-                    {currentUser.role === 'admin' && (
+              {activeTab === "passwords" && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                      <Input
+                        placeholder="Pesquisar senhas..."
+                        className="pl-10 border-gray-200"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2">
                       <Button
-                        onClick={() => setShowAddForm(!showAddForm)}
-                        className="gap-2 bg-teal-700 hover:bg-teal-800"
+                        onClick={() => setShowCategoryFilters(!showCategoryFilters)}
+                        variant="outline"
+                        className="gap-2 border-gray-200"
                       >
-                        <Plus className="h-5 w-5" />
-                        Adicionar Senha
+                        <Filter className="h-5 w-5" />
+                        Filtrar
                       </Button>
-                    )}
-                  </div>
-                </div>
-
-                {showCategoryFilters && (
-                  <Card className="p-4 animate-fade-in border-gray-200">
-                    <div className="flex flex-wrap gap-4">
-                      <CheckboxGroup label="Filtrar por categoria:" className="flex-1">
-                        {userCategories.map(category => (
-                          <CheckboxItem 
-                            key={category.id}
-                            checked={selectedCategories.includes(category.id)}
-                            onCheckedChange={() => toggleCategoryFilter(category.id)}
-                            value={category.id}
-                          >
-                            {category.name}
-                          </CheckboxItem>
-                        ))}
-                      </CheckboxGroup>
-                      {selectedCategories.length > 0 && (
-                        <div className="flex flex-col justify-end mb-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setSelectedCategories([])}
-                            className="text-sm text-teal-700"
-                          >
-                            Limpar filtros
-                          </Button>
-                        </div>
+                      {currentUser.role === 'admin' && (
+                        <Button
+                          onClick={() => setShowAddForm(!showAddForm)}
+                          className="gap-2 bg-teal-700 hover:bg-teal-800"
+                        >
+                          <Plus className="h-5 w-5" />
+                          Adicionar Senha
+                        </Button>
                       )}
                     </div>
-                  </Card>
-                )}
+                  </div>
 
-                {showAddForm && currentUser.role === 'admin' && (
-                  <Card className="p-4 animate-fade-in border-gray-200">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-teal-900">Nova Senha</h3>
-                      <Input
-                        placeholder="Título"
-                        value={newPassword.title}
-                        onChange={(e) => setNewPassword({...newPassword, title: e.target.value})}
-                        className="border-gray-200"
-                      />
-                      <Input
-                        placeholder="Nome de usuário"
-                        value={newPassword.username}
-                        onChange={(e) => setNewPassword({...newPassword, username: e.target.value})}
-                        className="border-gray-200"
-                      />
-                      <div className="flex gap-4">
+                  {showCategoryFilters && (
+                    <Card className="p-4 animate-fade-in border-gray-200">
+                      <div className="flex flex-wrap gap-4">
+                        <CheckboxGroup label="Filtrar por categoria:" className="flex-1">
+                          {userCategories.map(category => (
+                            <CheckboxItem 
+                              key={category.id}
+                              checked={selectedCategories.includes(category.id)}
+                              onCheckedChange={() => toggleCategoryFilter(category.id)}
+                              value={category.id}
+                            >
+                              {category.name}
+                            </CheckboxItem>
+                          ))}
+                        </CheckboxGroup>
+                        {selectedCategories.length > 0 && (
+                          <div className="flex flex-col justify-end mb-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedCategories([])}
+                              className="text-sm text-teal-700"
+                            >
+                              Limpar filtros
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  )}
+
+                  {showAddForm && currentUser.role === 'admin' && (
+                    <Card className="p-4 animate-fade-in border-gray-200">
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-teal-900">Nova Senha</h3>
                         <Input
-                          placeholder="Senha"
-                          type="password"
-                          value={newPassword.password}
-                          onChange={(e) => setNewPassword({...newPassword, password: e.target.value})}
+                          placeholder="Título"
+                          value={newPassword.title}
+                          onChange={(e) => setNewPassword({...newPassword, title: e.target.value})}
                           className="border-gray-200"
                         />
-                        <PasswordGenerator onGenerate={(pwd) => setNewPassword({...newPassword, password: pwd})} />
-                      </div>
-                      
-                      <div className="flex gap-4 items-center">
-                        <div className="relative flex-1">
-                          <Link className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                        <Input
+                          placeholder="Nome de usuário"
+                          value={newPassword.username}
+                          onChange={(e) => setNewPassword({...newPassword, username: e.target.value})}
+                          className="border-gray-200"
+                        />
+                        <div className="flex gap-4">
                           <Input
-                            placeholder="URL (opcional)"
-                            value={newPassword.url}
-                            onChange={(e) => setNewPassword({...newPassword, url: e.target.value})}
-                            className="pl-10 border-gray-200"
+                            placeholder="Senha"
+                            type="password"
+                            value={newPassword.password}
+                            onChange={(e) => setNewPassword({...newPassword, password: e.target.value})}
+                            className="border-gray-200"
                           />
+                          <PasswordGenerator onGenerate={(pwd) => setNewPassword({...newPassword, password: pwd})} />
+                        </div>
+                        
+                        <div className="flex gap-4 items-center">
+                          <div className="relative flex-1">
+                            <Link className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                            <Input
+                              placeholder="URL (opcional)"
+                              value={newPassword.url}
+                              onChange={(e) => setNewPassword({...newPassword, url: e.target.value})}
+                              className="pl-10 border-gray-200"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Select 
+                              value={newPassword.groupId} 
+                              onValueChange={(value) => setNewPassword({...newPassword, groupId: value})}
+                            >
+                              <SelectTrigger className="border-gray-200">
+                                <SelectValue placeholder="Selecione o grupo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userGroups.map(group => (
+                                  <SelectItem key={group.id} value={group.id}>
+                                    {group.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Select 
+                              value={newPassword.category} 
+                              onValueChange={(value) => setNewPassword({...newPassword, category: value})}
+                            >
+                              <SelectTrigger className="border-gray-200">
+                                <SelectValue placeholder="Selecione a categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userCategories.map(category => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setShowAddForm(false)} className="border-gray-200">Cancelar</Button>
+                          <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800">Salvar</Button>
                         </div>
                       </div>
+                    </Card>
+                  )}
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
+                  <PasswordList 
+                    passwords={filteredPasswords} 
+                    categories={categories}
+                    groups={groups}
+                    onDelete={handleDeletePassword}
+                  />
+                </div>
+              )}
+
+              {activeTab === "categories" && (
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4">
+                    {currentUser.role === 'admin' && (
+                      <Card className="p-4 border-gray-200">
+                        <h3 className="text-lg font-semibold mb-4 text-teal-900">
+                          {editingCategory ? "Editar Categoria" : "Adicionar Nova Categoria"}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Input
+                            placeholder="Nome da Categoria"
+                            value={editingCategory ? editingCategory.name : newCategory.name}
+                            onChange={(e) => editingCategory 
+                              ? setEditingCategory({...editingCategory, name: e.target.value})
+                              : setNewCategory({...newCategory, name: e.target.value})
+                            }
+                            className="border-gray-200"
+                          />
                           <Select 
-                            value={newPassword.groupId} 
-                            onValueChange={(value) => setNewPassword({...newPassword, groupId: value})}
+                            value={editingCategory ? editingCategory.groupId : newCategory.groupId} 
+                            onValueChange={(value) => editingCategory
+                              ? setEditingCategory({...editingCategory, groupId: value})
+                              : setNewCategory({...newCategory, groupId: value})
+                            }
                           >
                             <SelectTrigger className="border-gray-200">
                               <SelectValue placeholder="Selecione o grupo" />
@@ -389,104 +505,85 @@ const PasswordVault = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-
-                        <div>
-                          <Select 
-                            value={newPassword.category} 
-                            onValueChange={(value) => setNewPassword({...newPassword, category: value})}
-                          >
-                            <SelectTrigger className="border-gray-200">
-                              <SelectValue placeholder="Selecione a categoria" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {userCategories.map(category => (
-                                <SelectItem key={category.id} value={category.id}>
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setShowAddForm(false)} className="border-gray-200">Cancelar</Button>
-                        <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800">Salvar</Button>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-
-                <PasswordList 
-                  passwords={filteredPasswords} 
-                  categories={categories}
-                  groups={groups}
-                />
-              </TabsContent>
-
-              <TabsContent value="categories" className={activeTab === "categories" ? "block mt-4 space-y-4" : "hidden"}>
-                <div className="grid gap-4">
-                  {currentUser.role === 'admin' && (
-                    <Card className="p-4 border-gray-200">
-                      <h3 className="text-lg font-semibold mb-4 text-teal-900">Adicionar Nova Categoria</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                          placeholder="Nome da Categoria"
-                          value={newCategory.name}
-                          onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                          className="border-gray-200"
-                        />
-                        <Select 
-                          value={newCategory.groupId} 
-                          onValueChange={(value) => setNewCategory({...newCategory, groupId: value})}
-                        >
-                          <SelectTrigger className="border-gray-200">
-                            <SelectValue placeholder="Selecione o grupo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {userGroups.map(group => (
-                              <SelectItem key={group.id} value={group.id}>
-                                {group.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button onClick={handleAddCategory} className="col-span-1 md:col-span-2 bg-teal-700 hover:bg-teal-800">Adicionar Categoria</Button>
-                      </div>
-                    </Card>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {userCategories.map(category => {
-                      const group = groups.find(g => g.id === category.groupId);
-                      return (
-                        <Card key={category.id} className="p-4 border-gray-200 hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-semibold text-teal-900">{category.name}</h3>
-                              <p className="text-sm text-gray-500">Grupo: {group?.name || 'Desconhecido'}</p>
-                            </div>
-                            <Badge variant="outline" className="border-teal-200 text-teal-700">
-                              {passwords.filter(p => p.category === category.id).length || 0} senhas
-                            </Badge>
+                          <div className="col-span-1 md:col-span-2 flex gap-2 justify-end">
+                            {editingCategory && (
+                              <Button 
+                                variant="outline" 
+                                onClick={() => setEditingCategory(null)}
+                                className="border-gray-200"
+                              >
+                                Cancelar
+                              </Button>
+                            )}
+                            <Button 
+                              onClick={() => {
+                                if (editingCategory) {
+                                  handleEditCategory(editingCategory);
+                                  setEditingCategory(null);
+                                } else {
+                                  handleAddCategory();
+                                }
+                              }} 
+                              className="bg-teal-700 hover:bg-teal-800"
+                            >
+                              {editingCategory ? "Atualizar" : "Adicionar"} Categoria
+                            </Button>
                           </div>
-                        </Card>
-                      );
-                    })}
+                        </div>
+                      </Card>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {userCategories.map(category => {
+                        const group = groups.find(g => g.id === category.groupId);
+                        return (
+                          <Card key={category.id} className="p-4 border-gray-200 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-semibold text-teal-900">{category.name}</h3>
+                                <p className="text-sm text-gray-500">Grupo: {group?.name || 'Desconhecido'}</p>
+                              </div>
+                              <Badge variant="outline" className="border-teal-200 text-teal-700">
+                                {passwords.filter(p => p.category === category.id).length || 0} senhas
+                              </Badge>
+                            </div>
+                            
+                            {currentUser.role === 'admin' && (
+                              <div className="flex justify-end gap-2 mt-3">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => setEditingCategory(category)}
+                                  className="border-gray-200"
+                                >
+                                  Editar
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm" 
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                >
+                                  Excluir
+                                </Button>
+                              </div>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </TabsContent>
+              )}
 
-              {currentUser.role === 'admin' && (
-                <TabsContent value="users" className={activeTab === "users" ? "block mt-4" : "hidden"}>
+              {currentUser.role === 'admin' && activeTab === "users" && (
+                <div className="mt-4">
                   <UserManager 
                     users={users} 
                     setUsers={setUsers} 
                     groups={groups} 
                     setGroups={setGroups} 
                   />
-                </TabsContent>
+                </div>
               )}
             </div>
           </Card>
