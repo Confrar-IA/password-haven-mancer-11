@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ import PasswordGenerator from './PasswordGenerator';
 import UserManager from './UserManager';
 import { Eye, EyeOff, Search, Plus, Users, Lock, Filter, Bell, Tag, Check, Link } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckboxGroup, CheckboxItem } from './CheckboxGroup';
 import { Badge } from "@/components/ui/badge";
 import AppSidebar from './AppSidebar';
@@ -80,6 +78,7 @@ const LOCAL_STORAGE_KEYS = {
 };
 
 const PasswordVault = () => {
+  // State declarations
   const [activeTab, setActiveTab] = useState("passwords");
   const [passwords, setPasswords] = useState<Password[]>([]);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
@@ -140,19 +139,27 @@ const PasswordVault = () => {
 
   // Save data to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.PASSWORDS, JSON.stringify(passwords));
+    if (passwords && passwords.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.PASSWORDS, JSON.stringify(passwords));
+    }
   }, [passwords]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.USERS, JSON.stringify(users));
+    if (users && users.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USERS, JSON.stringify(users));
+    }
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+    if (groups && groups.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+    }
   }, [groups]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+    if (categories && categories.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+    }
   }, [categories]);
 
   useEffect(() => {
@@ -311,6 +318,9 @@ const PasswordVault = () => {
     return <Login users={users} onLogin={handleLogin} />;
   }
 
+  // Editing state for categories
+  const [editingCategory, setEditingCategory] = useState<PasswordCategory | null>(null);
+
   // Somente mostrar grupos que o usuário atual tem acesso
   const userGroups = groups.filter(group => 
     currentUser.role === 'admin' || currentUser.groups.includes(group.id)
@@ -328,9 +338,6 @@ const PasswordVault = () => {
              pass.username.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (selectedCategories.length === 0 || selectedCategories.includes(pass.category))
   );
-
-  // Estado para categoria sendo editada
-  const [editingCategory, setEditingCategory] = useState<PasswordCategory | null>(null);
 
   return (
     <div className="min-h-screen bg-teal-900 flex">
