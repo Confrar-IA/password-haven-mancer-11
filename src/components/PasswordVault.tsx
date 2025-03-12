@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckboxGroup, CheckboxItem } from './CheckboxGroup';
 import { Badge } from "@/components/ui/badge";
 import AppSidebar from './AppSidebar';
+import Login from './Login';
 
 export type User = {
   id: string;
@@ -26,6 +27,7 @@ export type User = {
   fullName: string;
   role: 'admin' | 'user';
   groups: string[];
+  password?: string;
 };
 
 export type PasswordCategory = {
@@ -64,8 +66,8 @@ const INITIAL_CATEGORIES: PasswordCategory[] = [
 ];
 
 const INITIAL_USERS: User[] = [
-  { id: '1', username: 'admin', fullName: 'Administrador', role: 'admin', groups: ['1', '2', '3'] },
-  { id: '2', username: 'usuario1', fullName: 'Usuário Regular', role: 'user', groups: ['1'] },
+  { id: '1', username: 'admin', fullName: 'Administrador', role: 'admin', groups: ['1', '2', '3'], password: 'admin123' },
+  { id: '2', username: 'usuario1', fullName: 'Usuário Regular', role: 'user', groups: ['1'], password: 'user123' },
 ];
 
 const LOCAL_STORAGE_KEYS = {
@@ -73,7 +75,8 @@ const LOCAL_STORAGE_KEYS = {
   USERS: 'password_vault_users',
   GROUPS: 'password_vault_groups',
   CATEGORIES: 'password_vault_categories',
-  CURRENT_USER: 'password_vault_current_user'
+  CURRENT_USER: 'password_vault_current_user',
+  IS_LOGGED_IN: 'password_vault_is_logged_in'
 };
 
 const PasswordVault = () => {
@@ -82,7 +85,8 @@ const PasswordVault = () => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [groups, setGroups] = useState<PermissionGroup[]>(INITIAL_GROUPS);
   const [categories, setCategories] = useState<PasswordCategory[]>(INITIAL_CATEGORIES);
-  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[0]); // Default to admin for demo
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -124,9 +128,14 @@ const PasswordVault = () => {
     if (savedCategories) setCategories(JSON.parse(savedCategories));
     else localStorage.setItem(LOCAL_STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
     
-    const savedCurrentUser = localStorage.getItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
-    if (savedCurrentUser) setCurrentUser(JSON.parse(savedCurrentUser));
-    else localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(INITIAL_USERS[0]));
+    const savedIsLoggedIn = localStorage.getItem(LOCAL_STORAGE_KEYS.IS_LOGGED_IN);
+    if (savedIsLoggedIn === 'true') {
+      const savedCurrentUser = localStorage.getItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
+      if (savedCurrentUser) {
+        setCurrentUser(JSON.parse(savedCurrentUser));
+        setIsLoggedIn(true);
+      }
+    }
   }, []);
 
   // Save data to localStorage when it changes
@@ -147,7 +156,13 @@ const PasswordVault = () => {
   }, [categories]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+    if (currentUser) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.IS_LOGGED_IN, 'true');
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
+      localStorage.setItem(LOCAL_STORAGE_KEYS.IS_LOGGED_IN, 'false');
+    }
   }, [currentUser]);
 
   const handleAddPassword = () => {
@@ -266,6 +281,21 @@ const PasswordVault = () => {
     });
   };
 
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+    setActiveTab("passwords");
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    toast({
+      title: "Logout",
+      description: "Você saiu do sistema com sucesso",
+    });
+  };
+
   const toggleCategoryFilter = (categoryId: string) => {
     setSelectedCategories(prevSelected => {
       if (prevSelected.includes(categoryId)) {
@@ -275,6 +305,11 @@ const PasswordVault = () => {
       }
     });
   };
+
+  // Se não estiver logado, mostrar tela de login
+  if (!isLoggedIn || !currentUser) {
+    return <Login users={users} onLogin={handleLogin} />;
+  }
 
   // Somente mostrar grupos que o usuário atual tem acesso
   const userGroups = groups.filter(group => 
@@ -305,6 +340,7 @@ const PasswordVault = () => {
         currentUser={currentUser} 
         users={users} 
         handleUserSelect={handleUserSelect}
+        onLogout={handleLogout}
       />
       
       <div className="flex-1 p-6">

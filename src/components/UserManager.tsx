@@ -20,7 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CheckboxItem, CheckboxGroup } from "./CheckboxGroup";
-import { Plus, UserPlus, Shield, X, Edit, Trash, Save } from 'lucide-react';
+import { Plus, UserPlus, Shield, X, Edit, Trash, Save, Eye, EyeOff } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface UserManagerProps {
@@ -35,7 +35,8 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     username: '',
     fullName: '',
     role: 'user',
-    groups: []
+    groups: [],
+    password: ''
   });
 
   const [newGroup, setNewGroup] = useState<Omit<PermissionGroup, 'id'>>({
@@ -45,9 +46,10 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingGroup, setEditingGroup] = useState<PermissionGroup | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAddUser = () => {
-    if (!newUser.username || !newUser.fullName) {
+    if (!newUser.username || !newUser.fullName || !newUser.password) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
@@ -62,7 +64,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     };
 
     setUsers([...users, userEntry]);
-    setNewUser({ username: '', fullName: '', role: 'user', groups: [] });
+    setNewUser({ username: '', fullName: '', role: 'user', groups: [], password: '' });
     toast({
       title: "Sucesso",
       description: "Usuário adicionado com sucesso"
@@ -215,6 +217,31 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Senha"
+                    value={editingUser ? editingUser.password || '' : newUser.password || ''}
+                    onChange={(e) => editingUser
+                      ? setEditingUser({...editingUser, password: e.target.value})
+                      : setNewUser({...newUser, password: e.target.value})
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="role">Função</Label>
                 <Select
                   value={editingUser ? editingUser.role : newUser.role}
@@ -233,7 +260,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Grupos de Acesso</Label>
                 <div className="border rounded-md p-3 space-y-2">
                   <CheckboxGroup>
@@ -312,6 +339,10 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
                 <Badge className="mt-1" variant={user.role === 'admin' ? 'default' : 'outline'}>
                   {user.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </Badge>
+                
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">Senha: {user.password || 'Não definida'}</p>
+                </div>
                 
                 <div className="mt-4">
                   <h4 className="text-sm font-medium mb-2">Grupos de Acesso:</h4>
