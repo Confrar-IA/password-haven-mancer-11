@@ -13,11 +13,12 @@ import {
 import PasswordList from './PasswordList';
 import PasswordGenerator from './PasswordGenerator';
 import UserManager from './UserManager';
-import { Eye, EyeOff, Search, Plus, Users, Lock, Filter, Bell, Tag, Check } from 'lucide-react';
+import { Eye, EyeOff, Search, Plus, Users, Lock, Filter, Bell, Tag, Check, Link } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckboxGroup, CheckboxItem } from './CheckboxGroup';
 import { Badge } from "@/components/ui/badge";
+import AppSidebar from './AppSidebar';
 
 export type User = {
   id: string;
@@ -44,6 +45,7 @@ export type Password = {
   title: string;
   username: string;
   password: string;
+  url?: string;
   category: string;
   groupId: string;
 };
@@ -66,6 +68,14 @@ const INITIAL_USERS: User[] = [
   { id: '2', username: 'usuario1', fullName: 'Usuário Regular', role: 'user', groups: ['1'] },
 ];
 
+const LOCAL_STORAGE_KEYS = {
+  PASSWORDS: 'password_vault_passwords',
+  USERS: 'password_vault_users',
+  GROUPS: 'password_vault_groups',
+  CATEGORIES: 'password_vault_categories',
+  CURRENT_USER: 'password_vault_current_user'
+};
+
 const PasswordVault = () => {
   const [activeTab, setActiveTab] = useState("passwords");
   const [passwords, setPasswords] = useState<Password[]>([]);
@@ -82,6 +92,7 @@ const PasswordVault = () => {
     title: '',
     username: '',
     password: '',
+    url: '',
     category: '',
     groupId: ''
   });
@@ -95,6 +106,49 @@ const PasswordVault = () => {
     name: '',
     description: ''
   });
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedPasswords = localStorage.getItem(LOCAL_STORAGE_KEYS.PASSWORDS);
+    if (savedPasswords) setPasswords(JSON.parse(savedPasswords));
+    
+    const savedUsers = localStorage.getItem(LOCAL_STORAGE_KEYS.USERS);
+    if (savedUsers) setUsers(JSON.parse(savedUsers));
+    else localStorage.setItem(LOCAL_STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
+    
+    const savedGroups = localStorage.getItem(LOCAL_STORAGE_KEYS.GROUPS);
+    if (savedGroups) setGroups(JSON.parse(savedGroups));
+    else localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPS, JSON.stringify(INITIAL_GROUPS));
+    
+    const savedCategories = localStorage.getItem(LOCAL_STORAGE_KEYS.CATEGORIES);
+    if (savedCategories) setCategories(JSON.parse(savedCategories));
+    else localStorage.setItem(LOCAL_STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
+    
+    const savedCurrentUser = localStorage.getItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
+    if (savedCurrentUser) setCurrentUser(JSON.parse(savedCurrentUser));
+    else localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(INITIAL_USERS[0]));
+  }, []);
+
+  // Save data to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.PASSWORDS, JSON.stringify(passwords));
+  }, [passwords]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.USERS, JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.GROUPS, JSON.stringify(groups));
+  }, [groups]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+  }, [currentUser]);
 
   const handleAddPassword = () => {
     if (!newPassword.title || !newPassword.password || !newPassword.groupId) {
@@ -112,7 +166,7 @@ const PasswordVault = () => {
     };
 
     setPasswords([...passwords, passwordEntry]);
-    setNewPassword({ title: '', username: '', password: '', category: '', groupId: '' });
+    setNewPassword({ title: '', username: '', password: '', url: '', category: '', groupId: '' });
     setShowAddForm(false);
     toast({
       title: "Sucesso",
@@ -203,62 +257,20 @@ const PasswordVault = () => {
   );
 
   return (
-    <div className="min-h-screen bg-teal-900 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <Card className="p-6 backdrop-blur-sm bg-white/95 shadow-lg border-0">
-          <div className="flex flex-col space-y-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold text-teal-900">Cofre de Senhas</h1>
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="text-teal-600">
-                  <Bell className="h-5 w-5" />
-                </Button>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Logado como: </span>
-                  <Select 
-                    value={currentUser.id} 
-                    onValueChange={(value) => {
-                      const selectedUser = users.find(u => u.id === value);
-                      if (selectedUser) handleUserSelect(selectedUser);
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px] bg-white border-gray-200">
-                      <SelectValue placeholder="Selecionar usuário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map(user => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.fullName} ({user.role === 'admin' ? 'Admin' : 'Usuário'})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="h-10 w-10 rounded-full bg-teal-700 flex items-center justify-center text-white font-medium">
-                  {currentUser.fullName.charAt(0).toUpperCase()}
-                </div>
-              </div>
-            </div>
-
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-gray-100">
-                <TabsTrigger value="passwords" className="flex items-center gap-2 data-[state=active]:bg-teal-700 data-[state=active]:text-white">
-                  <Lock className="h-4 w-4" />
-                  Senhas
-                </TabsTrigger>
-                <TabsTrigger value="categories" className="flex items-center gap-2 data-[state=active]:bg-teal-700 data-[state=active]:text-white">
-                  <Tag className="h-4 w-4" />
-                  Categorias
-                </TabsTrigger>
-                {currentUser.role === 'admin' && (
-                  <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-teal-700 data-[state=active]:text-white">
-                    <Users className="h-4 w-4" />
-                    Usuários e Grupos
-                  </TabsTrigger>
-                )}
-              </TabsList>
-
-              <TabsContent value="passwords" className="mt-4 space-y-4">
+    <div className="min-h-screen bg-teal-900 flex">
+      <AppSidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        currentUser={currentUser} 
+        users={users} 
+        handleUserSelect={handleUserSelect}
+      />
+      
+      <div className="flex-1 p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Card className="p-6 backdrop-blur-sm bg-white/95 shadow-lg border-0">
+            <div className="flex flex-col space-y-4">
+              <TabsContent value="passwords" className={activeTab === "passwords" ? "block mt-4 space-y-4" : "hidden"}>
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -278,13 +290,15 @@ const PasswordVault = () => {
                       <Filter className="h-5 w-5" />
                       Filtrar
                     </Button>
-                    <Button
-                      onClick={() => setShowAddForm(!showAddForm)}
-                      className="gap-2 bg-teal-700 hover:bg-teal-800"
-                    >
-                      <Plus className="h-5 w-5" />
-                      Adicionar Senha
-                    </Button>
+                    {currentUser.role === 'admin' && (
+                      <Button
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className="gap-2 bg-teal-700 hover:bg-teal-800"
+                      >
+                        <Plus className="h-5 w-5" />
+                        Adicionar Senha
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -319,7 +333,7 @@ const PasswordVault = () => {
                   </Card>
                 )}
 
-                {showAddForm && (
+                {showAddForm && currentUser.role === 'admin' && (
                   <Card className="p-4 animate-fade-in border-gray-200">
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-teal-900">Nova Senha</h3>
@@ -344,6 +358,18 @@ const PasswordVault = () => {
                           className="border-gray-200"
                         />
                         <PasswordGenerator onGenerate={(pwd) => setNewPassword({...newPassword, password: pwd})} />
+                      </div>
+                      
+                      <div className="flex gap-4 items-center">
+                        <div className="relative flex-1">
+                          <Link className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                          <Input
+                            placeholder="URL (opcional)"
+                            value={newPassword.url}
+                            onChange={(e) => setNewPassword({...newPassword, url: e.target.value})}
+                            className="pl-10 border-gray-200"
+                          />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -399,35 +425,37 @@ const PasswordVault = () => {
                 />
               </TabsContent>
 
-              <TabsContent value="categories" className="mt-4 space-y-4">
+              <TabsContent value="categories" className={activeTab === "categories" ? "block mt-4 space-y-4" : "hidden"}>
                 <div className="grid gap-4">
-                  <Card className="p-4 border-gray-200">
-                    <h3 className="text-lg font-semibold mb-4 text-teal-900">Adicionar Nova Categoria</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        placeholder="Nome da Categoria"
-                        value={newCategory.name}
-                        onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                        className="border-gray-200"
-                      />
-                      <Select 
-                        value={newCategory.groupId} 
-                        onValueChange={(value) => setNewCategory({...newCategory, groupId: value})}
-                      >
-                        <SelectTrigger className="border-gray-200">
-                          <SelectValue placeholder="Selecione o grupo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {userGroups.map(group => (
-                            <SelectItem key={group.id} value={group.id}>
-                              {group.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button onClick={handleAddCategory} className="col-span-1 md:col-span-2 bg-teal-700 hover:bg-teal-800">Adicionar Categoria</Button>
-                    </div>
-                  </Card>
+                  {currentUser.role === 'admin' && (
+                    <Card className="p-4 border-gray-200">
+                      <h3 className="text-lg font-semibold mb-4 text-teal-900">Adicionar Nova Categoria</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                          placeholder="Nome da Categoria"
+                          value={newCategory.name}
+                          onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                          className="border-gray-200"
+                        />
+                        <Select 
+                          value={newCategory.groupId} 
+                          onValueChange={(value) => setNewCategory({...newCategory, groupId: value})}
+                        >
+                          <SelectTrigger className="border-gray-200">
+                            <SelectValue placeholder="Selecione o grupo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userGroups.map(group => (
+                              <SelectItem key={group.id} value={group.id}>
+                                {group.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={handleAddCategory} className="col-span-1 md:col-span-2 bg-teal-700 hover:bg-teal-800">Adicionar Categoria</Button>
+                      </div>
+                    </Card>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {userCategories.map(category => {
@@ -451,7 +479,7 @@ const PasswordVault = () => {
               </TabsContent>
 
               {currentUser.role === 'admin' && (
-                <TabsContent value="users" className="mt-4">
+                <TabsContent value="users" className={activeTab === "users" ? "block mt-4" : "hidden"}>
                   <UserManager 
                     users={users} 
                     setUsers={setUsers} 
@@ -460,9 +488,9 @@ const PasswordVault = () => {
                   />
                 </TabsContent>
               )}
-            </Tabs>
-          </div>
-        </Card>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
