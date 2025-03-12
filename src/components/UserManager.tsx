@@ -20,7 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CheckboxItem, CheckboxGroup } from "./CheckboxGroup";
-import { Plus, UserPlus, Shield, X, Edit, Trash, Save } from 'lucide-react';
+import { Plus, UserPlus, Shield, Edit, Trash, Save, EyeOff, Eye } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface UserManagerProps {
@@ -35,7 +35,8 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     username: '',
     fullName: '',
     role: 'user',
-    groups: []
+    groups: [],
+    password: ''
   });
 
   const [newGroup, setNewGroup] = useState<Omit<PermissionGroup, 'id'>>({
@@ -45,9 +46,10 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingGroup, setEditingGroup] = useState<PermissionGroup | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAddUser = () => {
-    if (!newUser.username || !newUser.fullName) {
+    if (!newUser.username || !newUser.fullName || !newUser.password) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
@@ -62,7 +64,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
     };
 
     setUsers([...users, userEntry]);
-    setNewUser({ username: '', fullName: '', role: 'user', groups: [] });
+    setNewUser({ username: '', fullName: '', role: 'user', groups: [], password: '' });
     toast({
       title: "Sucesso",
       description: "Usuário adicionado com sucesso"
@@ -70,7 +72,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
   };
 
   const handleEditUser = () => {
-    if (!editingUser || !editingUser.username || !editingUser.fullName) {
+    if (!editingUser || !editingUser.username || !editingUser.fullName || !editingUser.password) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
@@ -215,6 +217,29 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Senha do usuário"
+                    value={editingUser ? editingUser.password || '' : newUser.password || ''}
+                    onChange={(e) => editingUser
+                      ? setEditingUser({...editingUser, password: e.target.value})
+                      : setNewUser({...newUser, password: e.target.value})
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="role">Função</Label>
                 <Select
                   value={editingUser ? editingUser.role : newUser.role}
@@ -309,6 +334,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
               <CardContent className="pt-6">
                 <h3 className="font-semibold text-lg">{user.fullName}</h3>
                 <p className="text-sm text-gray-500">@{user.username}</p>
+                <p className="text-sm text-gray-500">Senha: {user.password || 'Não definida'}</p>
                 <Badge className="mt-1" variant={user.role === 'admin' ? 'default' : 'outline'}>
                   {user.role === 'admin' ? 'Administrador' : 'Usuário'}
                 </Badge>
