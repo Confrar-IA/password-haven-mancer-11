@@ -4,11 +4,16 @@ import { StorageFactory, StorageType } from '../services/storage/StorageFactory'
 import { User, Password, PasswordCategory, PermissionGroup, LogEntry } from '../models/types';
 
 export function useStorage() {
+  // Get the current storage type from StorageFactory
+  const [storageType, setStorageType] = useState<StorageType>(StorageFactory.currentType);
+  
   // Get the storage instance
   const storage = StorageFactory.getStorage();
   
-  // State for current storage type
-  const [storageType, setStorageType] = useState<StorageType>('localStorage');
+  // Update state when storage type changes
+  useEffect(() => {
+    setStorageType(StorageFactory.currentType);
+  }, []);
   
   // Callback to switch storage type
   const switchStorageType = useCallback((type: StorageType) => {

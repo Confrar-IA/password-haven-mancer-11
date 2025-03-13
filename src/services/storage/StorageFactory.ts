@@ -1,6 +1,7 @@
 
 import { StorageInterface } from './StorageInterface';
 import { LocalStorageService } from './LocalStorageService';
+import { MySQLStorageService } from './MySQLStorageService';
 
 // Storage types we support
 export type StorageType = 'localStorage' | 'mysql';
@@ -8,7 +9,23 @@ export type StorageType = 'localStorage' | 'mysql';
 // Factory class to get the right storage implementation
 export class StorageFactory {
   private static instance: StorageInterface;
-  private static currentType: StorageType = 'localStorage';
+  private static storageTypeKey = 'passwordVault_storageType';
+  
+  // Get currently saved storage type from localStorage
+  private static getSavedStorageType(): StorageType {
+    const savedType = localStorage.getItem(this.storageTypeKey);
+    return (savedType as StorageType) || 'localStorage';
+  }
+  
+  // Save current storage type to localStorage
+  private static saveStorageType(type: StorageType): void {
+    localStorage.setItem(this.storageTypeKey, type);
+  }
+
+  // Get the current storage type
+  public static get currentType(): StorageType {
+    return this.getSavedStorageType();
+  }
 
   // Get the current storage implementation
   public static getStorage(): StorageInterface {
@@ -20,7 +37,7 @@ export class StorageFactory {
 
   // Switch to a different storage implementation
   public static switchStorage(type: StorageType): StorageInterface {
-    this.currentType = type;
+    this.saveStorageType(type);
     this.instance = this.createStorage(type);
     return this.instance;
   }
@@ -31,10 +48,7 @@ export class StorageFactory {
       case 'localStorage':
         return new LocalStorageService();
       case 'mysql':
-        // In the future, we will return a MySQL implementation here
-        // return new MySQLStorageService();
-        console.warn('MySQL storage not yet implemented, falling back to localStorage');
-        return new LocalStorageService();
+        return new MySQLStorageService();
       default:
         return new LocalStorageService();
     }

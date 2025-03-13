@@ -7,13 +7,18 @@ import { Switch } from "@/components/ui/switch";
 import { useStorage } from '../hooks/useStorage';
 import { StorageType } from '../services/storage/StorageFactory';
 import { toast } from "@/components/ui/use-toast";
-import { Database, HardDrive } from 'lucide-react';
+import { Database, HardDrive, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Settings = () => {
   const { storageType, switchStorageType } = useStorage();
 
   const handleStorageTypeChange = (checked: boolean) => {
     const newStorageType: StorageType = checked ? 'mysql' : 'localStorage';
+    
+    if (newStorageType === storageType) {
+      return; // No change needed
+    }
     
     try {
       switchStorageType(newStorageType);
@@ -67,6 +72,18 @@ const Settings = () => {
                   ? 'Os dados estão sendo armazenados no banco de dados MySQL.' 
                   : 'Os dados estão sendo armazenados localmente no navegador.'}
               </p>
+              
+              {storageType === 'mysql' && (
+                <Alert className="mt-4 bg-yellow-50 dark:bg-yellow-950/30">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Atenção</AlertTitle>
+                  <AlertDescription>
+                    Atualmente o sistema está usando uma simulação de MySQL.
+                    Os dados ainda estão sendo armazenados localmente, mas em um espaço separado.
+                    Em um ambiente de produção, conecte com um banco MySQL real.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
             
             <div className="border-t border-border pt-4">
