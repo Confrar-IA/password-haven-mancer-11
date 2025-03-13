@@ -13,9 +13,17 @@ interface PasswordListProps {
   groups: PermissionGroup[];
   onDelete: (id: string) => void;
   onEdit: (password: Password) => void;
+  userRole: 'admin' | 'user';
 }
 
-const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, groups, onDelete, onEdit }) => {
+const PasswordList: React.FC<PasswordListProps> = ({ 
+  passwords, 
+  categories, 
+  groups, 
+  onDelete, 
+  onEdit,
+  userRole
+}) => {
   const [visiblePasswords, setVisiblePasswords] = useState<{[key: string]: boolean}>({});
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
 
@@ -111,14 +119,16 @@ const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, grou
                         <Copy className="h-5 w-5" />
                       )}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-accent text-primary"
-                      onClick={() => onEdit(password)}
-                    >
-                      <Edit className="h-5 w-5" />
-                    </Button>
+                    {userRole === 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-accent text-primary"
+                        onClick={() => onEdit(password)}
+                      >
+                        <Edit className="h-5 w-5" />
+                      </Button>
+                    )}
                     {password.url && (
                       <Button
                         variant="ghost"
@@ -131,14 +141,16 @@ const PasswordList: React.FC<PasswordListProps> = ({ passwords, categories, grou
                         </a>
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-red-100 dark:hover:bg-red-900 text-red-500"
-                      onClick={() => onDelete(password.id)}
-                    >
-                      <Trash className="h-5 w-5" />
-                    </Button>
+                    {userRole === 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-red-100 dark:hover:bg-red-900 text-red-500"
+                        onClick={() => onDelete(password.id)}
+                      >
+                        <Trash className="h-5 w-5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="mt-2">

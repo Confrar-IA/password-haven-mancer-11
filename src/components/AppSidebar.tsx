@@ -81,23 +81,25 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
             </Tooltip>
           </TooltipProvider>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={activeTab === 'management' ? 'secondary' : 'ghost'}
-                  className="w-full justify-start text-left"
-                  onClick={() => setActiveTab('management')}
-                >
-                  <Users className="h-5 w-5 mr-2" />
-                  <span className="hidden md:inline">Gerenciamento</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="md:hidden">
-                Gerenciamento
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {currentUser.role === 'admin' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={activeTab === 'management' ? 'secondary' : 'ghost'}
+                    className="w-full justify-start text-left"
+                    onClick={() => setActiveTab('management')}
+                  >
+                    <Users className="h-5 w-5 mr-2" />
+                    <span className="hidden md:inline">Gerenciamento</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="md:hidden">
+                  Gerenciamento
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
 
           <TooltipProvider>
             <Tooltip>

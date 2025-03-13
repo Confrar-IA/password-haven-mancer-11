@@ -1,3 +1,4 @@
+
 // Update the User interface to include password
 export interface User {
   id: string;
@@ -30,7 +31,7 @@ export interface PermissionGroup {
   description: string;
 }
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PasswordList from './PasswordList';
 import AppSidebar from './AppSidebar';
 import Management from '../pages/Management';
@@ -47,7 +48,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Plus, Edit } from 'lucide-react';
+import { Plus, Edit, Search } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface PasswordVaultProps {
@@ -56,11 +57,15 @@ interface PasswordVaultProps {
 
 const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   const [passwords, setPasswords] = useState<Password[]>([]);
+  const [filteredPasswords, setFilteredPasswords] = useState<Password[]>([]);
   const [categories, setCategories] = useState<PasswordCategory[]>([]);
   const [groups, setGroups] = useState<PermissionGroup[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('passwords');
   const [passwordTab, setPasswordTab] = useState('list');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchCategory, setSearchCategory] = useState('');
+  const [searchGroup, setSearchGroup] = useState('');
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'default',
     username: 'default',
@@ -108,10 +113,36 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     localStorage.setItem('users', JSON.stringify(users));
   }, [users]);
 
+  // Apply filtering whenever search parameters or passwords change
+  useEffect(() => {
+    let results = [...passwords];
+    
+    if (searchTerm) {
+      const lowercaseTerm = searchTerm.toLowerCase();
+      results = results.filter(password => 
+        password.title.toLowerCase().includes(lowercaseTerm) || 
+        password.username.toLowerCase().includes(lowercaseTerm) || 
+        (password.url && password.url.toLowerCase().includes(lowercaseTerm))
+      );
+    }
+    
+    if (searchCategory) {
+      results = results.filter(password => password.category === searchCategory);
+    }
+    
+    if (searchGroup) {
+      results = results.filter(password => password.groupId === searchGroup);
+    }
+    
+    setFilteredPasswords(results);
+  }, [passwords, searchTerm, searchCategory, searchGroup]);
+
   const loadFromLocalStorage = () => {
     const storedPasswords = localStorage.getItem('passwords');
     if (storedPasswords) {
-      setPasswords(JSON.parse(storedPasswords));
+      const parsedPasswords = JSON.parse(storedPasswords);
+      setPasswords(parsedPasswords);
+      setFilteredPasswords(parsedPasswords);
     }
 
     const storedCategories = localStorage.getItem('categories');
@@ -134,7 +165,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     }
   };
 
-  const handleAddPassword = () => {
+  // Using useCallback to ensure stability of the function
+  const handleAddPassword = useCallback(() => {
     if (!newPassword.title || !newPassword.username || !newPassword.password || !newPassword.category || !newPassword.groupId) {
       toast({
         title: "Erro",
@@ -149,7 +181,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       ...newPassword
     };
 
-    setPasswords([...passwords, passwordEntry]);
+    setPasswords(prev => [...prev, passwordEntry]);
     setNewPassword({ title: '', username: '', password: '', url: '', category: '', groupId: '' });
     toast({
       title: "Sucesso",
@@ -157,9 +189,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
     
     setPasswordTab('list');
-  };
+  }, [newPassword]);
 
-  const handleEditPassword = () => {
+  // Using useCallback for handleEditPassword as well
+  const handleEditPassword = useCallback(() => {
     if (!editingPassword || !editingPassword.title || !editingPassword.username || !editingPassword.password || !editingPassword.category || !editingPassword.groupId) {
       toast({
         title: "Erro",
@@ -177,7 +210,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
     
     setPasswordTab('list');
-  };
+  }, [editingPassword, passwords]);
 
   const handleDeletePassword = (id: string) => {
     setPasswords(passwords.filter(password => password.id !== id));
@@ -190,6 +223,13 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   const handleEditPasswordClick = (password: Password) => {
     setEditingPassword(password);
     setPasswordTab('edit');
+  };
+
+  // Clear all search filters
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSearchCategory('');
+    setSearchGroup('');
   };
 
   const PasswordForm = ({ isEditing = false }: { isEditing?: boolean }) => {
@@ -323,6 +363,79 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     );
   };
 
+  // Search filter component
+  const SearchFilters = () => (
+    <Card className="mb-6">
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="searchTerm">Buscar</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="searchTerm"
+                className="pl-9"
+                placeholder="Buscar por título, usuário ou URL"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="searchCategory">Categoria</Label>
+            <Select
+              value={searchCategory}
+              onValueChange={setSearchCategory}
+            >
+              <SelectTrigger id="searchCategory">
+                <SelectValue placeholder="Todas as categorias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas as categorias</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="searchGroup">Grupo</Label>
+            <Select
+              value={searchGroup}
+              onValueChange={setSearchGroup}
+            >
+              <SelectTrigger id="searchGroup">
+                <SelectValue placeholder="Todos os grupos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os grupos</SelectItem>
+                {groups.map(group => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="md:col-span-4 flex justify-end">
+            <Button 
+              variant="outline" 
+              onClick={handleClearFilters}
+              className="mt-2"
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <>
       <AppSidebar
@@ -336,33 +449,41 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
         {activeTab === 'passwords' && (
           <div className="space-y-6">
             <Tabs value={passwordTab} onValueChange={setPasswordTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className={`grid w-full ${currentUser.role === 'admin' ? 'grid-cols-2' : 'grid-cols-1'} mb-6`}>
                 <TabsTrigger value="list">Visualizar Senhas</TabsTrigger>
-                <TabsTrigger value="add">Adicionar Senha</TabsTrigger>
+                {currentUser.role === 'admin' && (
+                  <TabsTrigger value="add">Adicionar Senha</TabsTrigger>
+                )}
               </TabsList>
               
-              <TabsContent value="add">
-                <PasswordForm />
-              </TabsContent>
+              {currentUser.role === 'admin' && (
+                <TabsContent value="add">
+                  <PasswordForm />
+                </TabsContent>
+              )}
               
-              <TabsContent value="edit">
-                <PasswordForm isEditing={true} />
-              </TabsContent>
+              {currentUser.role === 'admin' && (
+                <TabsContent value="edit">
+                  <PasswordForm isEditing={true} />
+                </TabsContent>
+              )}
               
               <TabsContent value="list">
+                <SearchFilters />
                 <PasswordList
-                  passwords={passwords}
+                  passwords={filteredPasswords}
                   categories={categories}
                   groups={groups}
                   onDelete={handleDeletePassword}
                   onEdit={handleEditPasswordClick}
+                  userRole={currentUser.role}
                 />
               </TabsContent>
             </Tabs>
           </div>
         )}
 
-        {activeTab === 'management' && (
+        {activeTab === 'management' && currentUser.role === 'admin' && (
           <Management 
             users={users} 
             setUsers={setUsers} 
