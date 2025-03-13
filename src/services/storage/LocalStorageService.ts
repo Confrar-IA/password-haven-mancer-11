@@ -197,24 +197,28 @@ export class LocalStorageService implements StorageInterface {
 
   async createLog(log: Omit<LogEntry, 'id'>): Promise<LogEntry> {
     const logs = await this.getLogs();
-    const newLog = { ...log, id: this.generateId() };
+    const newLog = { 
+      ...log, 
+      id: this.generateId(),
+      timestamp: typeof log.timestamp === 'number' ? new Date(log.timestamp).toISOString() : log.timestamp
+    };
     localStorage.setItem('logs', JSON.stringify([...logs, newLog]));
     return newLog;
   }
 
   // Authentication
-  async login(username: string, password: string): Promise<User | null> {
+  async login(username: string, password: string): Promise<User> {
     const user = await this.getUserByUsername(username);
     
     if (user && user.password === password) {
       // Check if user is active
       if (user.active === false) {
-        return null; // Inactive users can't log in
+        throw new Error('User account is inactive');
       }
 
       localStorage.setItem('currentUser', JSON.stringify(user));
       await this.createLog({
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         action: 'login',
         entityType: 'user',
         entityId: user.id,
@@ -224,7 +228,7 @@ export class LocalStorageService implements StorageInterface {
       return user;
     }
     
-    return null;
+    throw new Error('Invalid username or password');
   }
 
   async getCurrentUser(): Promise<User | null> {
@@ -237,7 +241,7 @@ export class LocalStorageService implements StorageInterface {
     
     if (currentUser) {
       await this.createLog({
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         action: 'logout',
         entityType: 'user',
         entityId: currentUser.id,
