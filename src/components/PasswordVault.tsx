@@ -32,15 +32,22 @@ export interface PermissionGroup {
 
 import React, { useState, useEffect } from 'react';
 import PasswordList from './PasswordList';
-import CategoryList from './CategoryList';
 import AppSidebar from './AppSidebar';
-import UserManager from './UserManager';
+import Management from '../pages/Management';
+import Settings from '../pages/Settings';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from 'lucide-react';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Plus, Edit } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface PasswordVaultProps {
@@ -70,6 +77,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     category: '',
     groupId: ''
   });
+
+  const [editingPassword, setEditingPassword] = useState<Password | null>(null);
 
   useEffect(() => {
     loadFromLocalStorage();
@@ -118,10 +127,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleAddPassword = () => {
-    if (!newPassword.title || !newPassword.username || !newPassword.password) {
+    if (!newPassword.title || !newPassword.username || !newPassword.password || !newPassword.category || !newPassword.groupId) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios, incluindo Categoria e Grupo",
         variant: "destructive",
       });
       return;
@@ -142,6 +151,26 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     setPasswordTab('list');
   };
 
+  const handleEditPassword = () => {
+    if (!editingPassword || !editingPassword.title || !editingPassword.username || !editingPassword.password || !editingPassword.category || !editingPassword.groupId) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios, incluindo Categoria e Grupo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPasswords(passwords.map(pwd => pwd.id === editingPassword.id ? editingPassword : pwd));
+    setEditingPassword(null);
+    toast({
+      title: "Sucesso",
+      description: "Senha atualizada com sucesso"
+    });
+    
+    setPasswordTab('list');
+  };
+
   const handleDeletePassword = (id: string) => {
     setPasswords(passwords.filter(password => password.id !== id));
     toast({
@@ -150,46 +179,141 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
   };
 
-  const handleAddCategory = (category: PasswordCategory) => {
-    setCategories([...categories, category]);
-    toast({
-      title: "Sucesso",
-      description: "Categoria adicionada com sucesso"
-    });
+  const handleEditPasswordClick = (password: Password) => {
+    setEditingPassword(password);
+    setPasswordTab('edit');
   };
 
-  const handleDeleteCategory = (id: string) => {
-    const passwordsWithCategory = passwords.filter(password => password.category === id);
-    if (passwordsWithCategory.length > 0) {
-      toast({
-        title: "Erro",
-        description: `Não é possível excluir: ${passwordsWithCategory.length} senhas usam esta categoria`,
-        variant: "destructive",
-      });
-      return;
-    }
+  const PasswordForm = ({ isEditing = false }: { isEditing?: boolean }) => {
+    const passwordData = isEditing ? editingPassword : newPassword;
+    const setPasswordData = isEditing 
+      ? (data: any) => setEditingPassword({ ...editingPassword, ...data }) 
+      : (data: any) => setNewPassword({ ...newPassword, ...data });
 
-    setCategories(categories.filter(category => category.id !== id));
-    toast({
-      title: "Sucesso",
-      description: "Categoria removida com sucesso"
-    });
-  };
+    if (!passwordData) return null;
 
-  const handleUserSelect = (user: User) => {
-    setCurrentUser(user);
-  };
-
-  const SettingsContent = () => (
-    <div className="space-y-6">
+    return (
       <Card>
         <CardContent className="pt-6">
-          <h2 className="text-2xl font-semibold mb-4">Configurações</h2>
-          <p className="text-gray-500 dark:text-gray-400">Opções de configuração estarão disponíveis em breve.</p>
+          <h2 className="text-2xl font-semibold mb-4">
+            {isEditing ? "Editar Senha" : "Adicionar Nova Senha"}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Título</Label>
+              <Input
+                id="title"
+                placeholder="Título"
+                value={passwordData.title}
+                onChange={(e) => setPasswordData({ title: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Nome de Usuário</Label>
+              <Input
+                id="username"
+                placeholder="Nome de Usuário"
+                value={passwordData.username}
+                onChange={(e) => setPasswordData({ username: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Senha"
+                value={passwordData.password}
+                onChange={(e) => setPasswordData({ password: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="url">URL</Label>
+              <Input
+                id="url"
+                type="url"
+                placeholder="URL"
+                value={passwordData.url}
+                onChange={(e) => setPasswordData({ url: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Select
+                value={passwordData.category}
+                onValueChange={(value) => setPasswordData({ category: value })}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Selecionar categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="group">Grupo</Label>
+              <Select
+                value={passwordData.groupId}
+                onValueChange={(value) => setPasswordData({ groupId: value })}
+              >
+                <SelectTrigger id="group">
+                  <SelectValue placeholder="Selecionar grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map(group => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="mt-4 col-span-2 flex justify-end">
+              {isEditing && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditingPassword(null);
+                    setPasswordTab('list');
+                  }}
+                  className="mr-2"
+                >
+                  Cancelar
+                </Button>
+              )}
+              <Button 
+                onClick={isEditing ? handleEditPassword : handleAddPassword} 
+                className="bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700"
+              >
+                {isEditing ? (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Atualizar Senha
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Senha
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -210,61 +334,11 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
               </TabsList>
               
               <TabsContent value="add">
-                <Card>
-                  <CardContent className="pt-6">
-                    <h2 className="text-2xl font-semibold mb-4">Adicionar Nova Senha</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Título</Label>
-                        <Input
-                          id="title"
-                          placeholder="Título"
-                          value={newPassword.title}
-                          onChange={(e) => setNewPassword({ ...newPassword, title: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="username">Nome de Usuário</Label>
-                        <Input
-                          id="username"
-                          placeholder="Nome de Usuário"
-                          value={newPassword.username}
-                          onChange={(e) => setNewPassword({ ...newPassword, username: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Senha</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          placeholder="Senha"
-                          value={newPassword.password}
-                          onChange={(e) => setNewPassword({ ...newPassword, password: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="url">URL</Label>
-                        <Input
-                          id="url"
-                          type="url"
-                          placeholder="URL"
-                          value={newPassword.url}
-                          onChange={(e) => setNewPassword({ ...newPassword, url: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="mt-4 col-span-2 flex justify-end">
-                        <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar Senha
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <PasswordForm />
+              </TabsContent>
+              
+              <TabsContent value="edit">
+                <PasswordForm isEditing={true} />
               </TabsContent>
               
               <TabsContent value="list">
@@ -273,31 +347,26 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                   categories={categories}
                   groups={groups}
                   onDelete={handleDeletePassword}
+                  onEdit={handleEditPasswordClick}
                 />
               </TabsContent>
             </Tabs>
           </div>
         )}
 
-        {activeTab === 'categories' && (
-          <CategoryList
-            categories={categories}
-            onAddCategory={handleAddCategory}
-            onDeleteCategory={handleDeleteCategory}
-          />
-        )}
-
-        {activeTab === 'users' && currentUser.role === 'admin' && (
-          <UserManager
-            users={users}
-            setUsers={setUsers}
-            groups={groups}
-            setGroups={setGroups}
+        {activeTab === 'management' && (
+          <Management 
+            users={users} 
+            setUsers={setUsers} 
+            groups={groups} 
+            setGroups={setGroups} 
+            categories={categories} 
+            setCategories={setCategories} 
           />
         )}
         
         {activeTab === 'settings' && (
-          <SettingsContent />
+          <Settings />
         )}
       </div>
     </>

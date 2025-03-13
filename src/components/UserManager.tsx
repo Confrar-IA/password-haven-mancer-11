@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, PermissionGroup } from './PasswordVault';
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,9 +27,16 @@ interface UserManagerProps {
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   groups: PermissionGroup[];
   setGroups: React.Dispatch<React.SetStateAction<PermissionGroup[]>>;
+  initialTab?: 'users' | 'groups';
 }
 
-const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setGroups }) => {
+const UserManager: React.FC<UserManagerProps> = ({ 
+  users, 
+  setUsers, 
+  groups, 
+  setGroups,
+  initialTab = 'users'
+}) => {
   const [newUser, setNewUser] = useState<Omit<User, 'id'>>({
     username: '',
     fullName: '',
@@ -139,7 +145,6 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
   };
 
   const handleRemoveGroup = (groupId: string) => {
-    // Check if any users are using this group
     const usersWithGroup = users.filter(user => user.groups.includes(groupId));
     if (usersWithGroup.length > 0) {
       toast({
@@ -171,7 +176,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
   };
 
   return (
-    <Tabs defaultValue="users" className="w-full">
+    <Tabs defaultValue={initialTab} className="w-full">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="users" className="flex items-center gap-2">
           <UserPlus className="h-4 w-4" />

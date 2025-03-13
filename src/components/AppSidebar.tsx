@@ -1,27 +1,23 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { User } from './PasswordVault';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
-  Lock, 
-  Tag, 
-  Users, 
-  LogOut, 
-  ChevronDown, 
-  ChevronRight, 
-  Settings,
-  FolderCog
-} from 'lucide-react';
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 import { useNavigate } from 'react-router-dom';
+import { Settings, LogOut, Key, Cog, Users } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
-import { ThemeToggle } from './ThemeToggle';
 
 interface AppSidebarProps {
   activeTab: string;
@@ -39,162 +35,119 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   handleUserSelect 
 }) => {
   const navigate = useNavigate();
-  const [expandedMenus, setExpandedMenus] = useState<{[key: string]: boolean}>({
-    management: false
-  });
-
-  const toggleMenu = (menu: string) => {
-    setExpandedMenus(prev => ({
-      ...prev,
-      [menu]: !prev[menu]
-    }));
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     toast({
       title: "Logout realizado",
-      description: "Você foi desconectado com sucesso",
+      description: "Você foi desconectado com sucesso"
     });
-    // Dispatch a custom event to notify other components about auth change
-    window.dispatchEvent(new Event('auth-change'));
     navigate('/login');
   };
 
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
-    <div className="w-64 bg-white dark:bg-gray-900 text-teal-800 dark:text-teal-300 h-screen p-4 flex flex-col overflow-hidden">
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-teal-800 dark:text-teal-300 mb-1">Cofre de Senhas</h1>
-          <p className="text-teal-600 dark:text-teal-400 text-sm">Gerencie suas senhas com segurança</p>
-        </div>
-        <ThemeToggle />
+    <div className="w-16 md:w-64 h-screen flex flex-col bg-card border-r border-border">
+      <div className="p-4 flex flex-col items-center md:items-start">
+        <h1 className="text-lg font-bold hidden md:block text-foreground">Password Vault</h1>
+        <p className="text-xs text-muted-foreground hidden md:block">Gerenciador de Senhas</p>
       </div>
-      
-      <div className="mb-6">
-        <Select 
-          value={currentUser.id} 
-          onValueChange={(value) => {
-            const selectedUser = users.find(u => u.id === value);
-            if (selectedUser) handleUserSelect(selectedUser);
-          }}
-        >
-          <SelectTrigger className="bg-teal-50 dark:bg-gray-800 border-teal-200 dark:border-gray-700 text-teal-800 dark:text-teal-300">
-            <SelectValue placeholder="Selecionar usuário" />
-          </SelectTrigger>
-          <SelectContent>
-            {users.map(user => (
-              <SelectItem key={user.id} value={user.id}>
-                {user.fullName} ({user.role === 'admin' ? 'Admin' : 'Usuário'})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="mt-2 text-sm text-teal-600 dark:text-teal-400">
-          Logado como: <span className="font-medium">{currentUser.fullName}</span>
-        </div>
-      </div>
-      
-      <nav className="space-y-1 flex-1 overflow-y-auto">
-        {/* Senhas */}
-        <button
-          onClick={() => setActiveTab("passwords")}
-          className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
-            activeTab === "passwords" 
-              ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
-              : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
-          }`}
-        >
-          <Lock className="h-5 w-5" />
-          <span>Senhas</span>
-        </button>
-        
-        {/* Gestão - Dropdown */}
-        <div className="border-t border-teal-100 dark:border-gray-700 pt-1">
-          <button
-            onClick={() => toggleMenu("management")}
-            className={`w-full flex items-center justify-between gap-2 p-3 rounded-md transition-colors hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400`}
-          >
-            <div className="flex items-center gap-2">
-              <FolderCog className="h-5 w-5" />
-              <span>Gestão</span>
-            </div>
-            {expandedMenus.management ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </button>
-          
-          {expandedMenus.management && (
-            <div className="ml-4 pl-2 border-l border-teal-100 dark:border-gray-700 space-y-1">
-              {/* Categorias */}
-              <button
-                onClick={() => setActiveTab("categories")}
-                className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors ${
-                  activeTab === "categories" 
-                    ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
-                    : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
-                }`}
-              >
-                <Tag className="h-4 w-4" />
-                <span className="text-sm">Categorias</span>
-              </button>
-              
-              {/* Usuários e Grupos */}
-              {currentUser.role === 'admin' && (
-                <button
-                  onClick={() => setActiveTab("users")}
-                  className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors ${
-                    activeTab === "users" 
-                      ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
-                      : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
-                  }`}
+
+      <div className="p-2 flex-1">
+        <nav className="space-y-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTab === 'passwords' ? 'secondary' : 'ghost'}
+                  className="w-full justify-start text-left"
+                  onClick={() => setActiveTab('passwords')}
                 >
-                  <Users className="h-4 w-4" />
-                  <span className="text-sm">Usuários e Grupos</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Configurações */}
-        <button
-          onClick={() => setActiveTab("settings")}
-          className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
-            activeTab === "settings" 
-              ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
-              : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
-          }`}
-        >
-          <Settings className="h-5 w-5" />
-          <span>Configurações</span>
-        </button>
-      </nav>
-      
-      <div className="mt-auto text-sm text-teal-700 dark:text-teal-400 pt-4 border-t border-teal-100 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-teal-600 dark:bg-teal-700 flex items-center justify-center text-white font-medium">
-              {currentUser.fullName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div className="font-medium">{currentUser.fullName}</div>
-              <div className="text-teal-600 dark:text-teal-400 text-xs">
-                {currentUser.role === 'admin' ? 'Administrador' : 'Usuário Regular'}
+                  <Key className="h-5 w-5 mr-2" />
+                  <span className="hidden md:inline">Senhas</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="md:hidden">
+                Senhas
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTab === 'management' ? 'secondary' : 'ghost'}
+                  className="w-full justify-start text-left"
+                  onClick={() => setActiveTab('management')}
+                >
+                  <Users className="h-5 w-5 mr-2" />
+                  <span className="hidden md:inline">Gerenciamento</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="md:hidden">
+                Gerenciamento
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTab === 'settings' ? 'secondary' : 'ghost'}
+                  className="w-full justify-start text-left"
+                  onClick={() => setActiveTab('settings')}
+                >
+                  <Cog className="h-5 w-5 mr-2" />
+                  <span className="hidden md:inline">Configurações</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="md:hidden">
+                Configurações
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </nav>
+      </div>
+
+      <div className="p-4 border-t border-border">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="w-full justify-start text-left">
+              <Avatar className="h-8 w-8 mr-2">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {getUserInitials(currentUser.fullName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden md:block overflow-hidden">
+                <p className="text-sm font-medium text-foreground truncate">{currentUser.fullName}</p>
+                <p className="text-xs text-muted-foreground truncate">@{currentUser.username}</p>
               </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-2 py-1.5 text-sm md:hidden">
+              <p className="font-medium text-foreground">{currentUser.fullName}</p>
+              <p className="text-xs text-muted-foreground">@{currentUser.username}</p>
             </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleLogout}
-            className="text-teal-700 dark:text-teal-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
