@@ -275,7 +275,7 @@ export class MySQLStorageService implements StorageInterface {
     
     await this.query(
       'INSERT INTO passwords (id, title, username, password, url, category_id, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, password.title, password.username, password.password, password.url, password.categoryId, password.groupId]
+      [id, password.title, password.username, password.password, password.url, password.category, password.groupId]
     );
     
     return { ...password, id };
@@ -296,7 +296,7 @@ export class MySQLStorageService implements StorageInterface {
       if (key !== 'id') { // Don't update id
         // Handle column name differences between object properties and DB columns
         let dbColumn = key;
-        if (key === 'categoryId') dbColumn = 'category_id';
+        if (key === 'category') dbColumn = 'category_id';
         if (key === 'groupId') dbColumn = 'group_id';
         
         updateFields.push(`${dbColumn} = ?`);
