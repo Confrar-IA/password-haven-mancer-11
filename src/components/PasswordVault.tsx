@@ -222,8 +222,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     }
   };
 
-  // Using useCallback to ensure stability of the function
-  const handleAddPassword = useCallback(() => {
+  const handleAddPassword = () => {
     if (!newPassword.title || !newPassword.username || !newPassword.password || !newPassword.category || !newPassword.groupId) {
       toast({
         title: "Erro",
@@ -250,10 +249,9 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
     
     setPasswordTab('list');
-  }, [newPassword, logAction]);
+  };
 
-  // Using useCallback for handleEditPassword as well
-  const handleEditPassword = useCallback(() => {
+  const handleEditPassword = () => {
     if (!editingPassword || !editingPassword.title || !editingPassword.username || !editingPassword.password || !editingPassword.category || !editingPassword.groupId) {
       toast({
         title: "Erro",
@@ -275,7 +273,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
     
     setPasswordTab('list');
-  }, [editingPassword, passwords, logAction]);
+  };
 
   const handleDeletePassword = useCallback((id: string) => {
     const passwordToDelete = passwords.find(p => p.id === id);
@@ -309,6 +307,20 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     
     if (!passwordData) return null;
 
+    const handleInputChange = (field: string, value: string) => {
+      if (isEditing && editingPassword) {
+        setEditingPassword({
+          ...editingPassword,
+          [field]: value
+        });
+      } else {
+        setNewPassword({
+          ...newPassword,
+          [field]: value
+        });
+      }
+    };
+
     return (
       <Card>
         <CardContent className="pt-6">
@@ -322,19 +334,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 id="title"
                 placeholder="Título"
                 value={passwordData.title}
-                onChange={(e) => {
-                  if (isEditing && editingPassword) {
-                    setEditingPassword({
-                      ...editingPassword,
-                      title: e.target.value
-                    });
-                  } else {
-                    setNewPassword({
-                      ...newPassword,
-                      title: e.target.value
-                    });
-                  }
-                }}
+                onChange={(e) => handleInputChange('title', e.target.value)}
               />
             </div>
 
@@ -344,19 +344,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 id="username"
                 placeholder="Nome de Usuário"
                 value={passwordData.username}
-                onChange={(e) => {
-                  if (isEditing && editingPassword) {
-                    setEditingPassword({
-                      ...editingPassword,
-                      username: e.target.value
-                    });
-                  } else {
-                    setNewPassword({
-                      ...newPassword,
-                      username: e.target.value
-                    });
-                  }
-                }}
+                onChange={(e) => handleInputChange('username', e.target.value)}
               />
             </div>
 
@@ -367,19 +355,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 type="password"
                 placeholder="Senha"
                 value={passwordData.password}
-                onChange={(e) => {
-                  if (isEditing && editingPassword) {
-                    setEditingPassword({
-                      ...editingPassword,
-                      password: e.target.value
-                    });
-                  } else {
-                    setNewPassword({
-                      ...newPassword,
-                      password: e.target.value
-                    });
-                  }
-                }}
+                onChange={(e) => handleInputChange('password', e.target.value)}
               />
             </div>
 
@@ -390,19 +366,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 type="url"
                 placeholder="URL"
                 value={passwordData.url}
-                onChange={(e) => {
-                  if (isEditing && editingPassword) {
-                    setEditingPassword({
-                      ...editingPassword,
-                      url: e.target.value
-                    });
-                  } else {
-                    setNewPassword({
-                      ...newPassword,
-                      url: e.target.value
-                    });
-                  }
-                }}
+                onChange={(e) => handleInputChange('url', e.target.value)}
               />
             </div>
 
@@ -410,19 +374,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
               <Label htmlFor="category">Categoria</Label>
               <Select
                 value={passwordData.category}
-                onValueChange={(value) => {
-                  if (isEditing && editingPassword) {
-                    setEditingPassword({
-                      ...editingPassword,
-                      category: value
-                    });
-                  } else {
-                    setNewPassword({
-                      ...newPassword,
-                      category: value
-                    });
-                  }
-                }}
+                onValueChange={(value) => handleInputChange('category', value)}
               >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Selecionar categoria" />
@@ -441,19 +393,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
               <Label htmlFor="group">Grupo</Label>
               <Select
                 value={passwordData.groupId}
-                onValueChange={(value) => {
-                  if (isEditing && editingPassword) {
-                    setEditingPassword({
-                      ...editingPassword,
-                      groupId: value
-                    });
-                  } else {
-                    setNewPassword({
-                      ...newPassword,
-                      groupId: value
-                    });
-                  }
-                }}
+                onValueChange={(value) => handleInputChange('groupId', value)}
               >
                 <SelectTrigger id="group">
                   <SelectValue placeholder="Selecionar grupo" />
@@ -707,3 +647,4 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
 };
 
 export default PasswordVault;
+
