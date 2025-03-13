@@ -80,6 +80,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
 
   const [editingPassword, setEditingPassword] = useState<Password | null>(null);
 
+  const handleUserSelect = (user: User) => {
+    setCurrentUser(user);
+    toast({
+      title: "Usuário alterado",
+      description: `Agora visualizando como: ${user.fullName}`
+    });
+  };
+
   useEffect(() => {
     loadFromLocalStorage();
   }, []);
