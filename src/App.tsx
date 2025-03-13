@@ -18,6 +18,7 @@ const App = () => {
   useEffect(() => {
     const checkAuth = () => {
       const currentUser = localStorage.getItem('currentUser');
+      console.log("App - checking authentication:", !!currentUser);
       setIsAuthenticated(!!currentUser);
     };
 
@@ -38,9 +39,12 @@ const App = () => {
           <Routes>
             <Route 
               path="/" 
-              element={isAuthenticated ? <Index /> : <Navigate to="/login" />}
+              element={<Index />}
             />
-            <Route path="/login" element={<Login />} />
+            <Route 
+              path="/login" 
+              element={isAuthenticated ? <Navigate to="/" /> : <Login />}
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

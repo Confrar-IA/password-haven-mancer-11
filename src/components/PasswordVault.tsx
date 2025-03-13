@@ -52,13 +52,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   const [groups, setGroups] = useState<PermissionGroup[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('passwords');
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'default',
-    username: 'default',
-    fullName: 'Default User',
-    role: 'user',
-    groups: [],
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [newPassword, setNewPassword] = useState<Omit<Password, 'id'>>({
     title: '',
@@ -68,6 +62,16 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     category: '',
     groupId: ''
   });
+
+  // Load data from localStorage and initialize admin user if needed
+  useEffect(() => {
+    console.log("PasswordVault - Initializing with user:", initialUser);
+    loadFromLocalStorage();
+    
+    if (initialUser) {
+      setCurrentUser(initialUser);
+    }
+  }, [initialUser]);
 
   // Ensure we save to localStorage after initial render
   useEffect(() => {
@@ -155,10 +159,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     } else {
       console.log("No users found in localStorage");
       setUsers([]);
-    }
-
-    if (initialUser) {
-      setCurrentUser(initialUser);
     }
     
     // Call createAdminUserIfNoneExists after setting users
@@ -248,6 +248,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   const handleUserSelect = (user: User) => {
     setCurrentUser(user);
   };
+
+  if (!currentUser) {
+    return <div className="flex items-center justify-center h-screen">Carregando Usuário...</div>;
+  }
 
   return (
     <>
