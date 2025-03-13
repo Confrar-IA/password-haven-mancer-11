@@ -1,4 +1,3 @@
-
 // Update the User interface to include password
 export interface User {
   id: string;
@@ -305,25 +304,9 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     setSearchGroup('');
   };
 
-  // Create memoized callbacks for form inputs to prevent focus loss
-  const handleNewPasswordChange = useCallback((field: keyof Omit<Password, 'id'>, value: string) => {
-    setNewPassword(prev => ({ ...prev, [field]: value }));
-  }, []);
-
-  const handleEditingPasswordChange = useCallback((field: keyof Password, value: string) => {
-    if (editingPassword) {
-      setEditingPassword(prev => prev ? { ...prev, [field]: value } : null);
-    }
-  }, [editingPassword]);
-
   const PasswordForm = ({ isEditing = false }: { isEditing?: boolean }) => {
     const passwordData = isEditing ? editingPassword : newPassword;
     
-    // Use the memoized callbacks based on whether we're editing or creating
-    const handleChange = isEditing 
-      ? handleEditingPasswordChange
-      : handleNewPasswordChange;
-
     if (!passwordData) return null;
 
     return (
@@ -339,7 +322,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 id="title"
                 placeholder="Título"
                 value={passwordData.title}
-                onChange={(e) => handleChange('title', e.target.value)}
+                onChange={(e) => {
+                  if (isEditing && editingPassword) {
+                    setEditingPassword({
+                      ...editingPassword,
+                      title: e.target.value
+                    });
+                  } else {
+                    setNewPassword({
+                      ...newPassword,
+                      title: e.target.value
+                    });
+                  }
+                }}
               />
             </div>
 
@@ -349,7 +344,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 id="username"
                 placeholder="Nome de Usuário"
                 value={passwordData.username}
-                onChange={(e) => handleChange('username', e.target.value)}
+                onChange={(e) => {
+                  if (isEditing && editingPassword) {
+                    setEditingPassword({
+                      ...editingPassword,
+                      username: e.target.value
+                    });
+                  } else {
+                    setNewPassword({
+                      ...newPassword,
+                      username: e.target.value
+                    });
+                  }
+                }}
               />
             </div>
 
@@ -360,7 +367,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 type="password"
                 placeholder="Senha"
                 value={passwordData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
+                onChange={(e) => {
+                  if (isEditing && editingPassword) {
+                    setEditingPassword({
+                      ...editingPassword,
+                      password: e.target.value
+                    });
+                  } else {
+                    setNewPassword({
+                      ...newPassword,
+                      password: e.target.value
+                    });
+                  }
+                }}
               />
             </div>
 
@@ -371,7 +390,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 type="url"
                 placeholder="URL"
                 value={passwordData.url}
-                onChange={(e) => handleChange('url', e.target.value)}
+                onChange={(e) => {
+                  if (isEditing && editingPassword) {
+                    setEditingPassword({
+                      ...editingPassword,
+                      url: e.target.value
+                    });
+                  } else {
+                    setNewPassword({
+                      ...newPassword,
+                      url: e.target.value
+                    });
+                  }
+                }}
               />
             </div>
 
@@ -379,7 +410,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
               <Label htmlFor="category">Categoria</Label>
               <Select
                 value={passwordData.category}
-                onValueChange={(value) => handleChange('category', value)}
+                onValueChange={(value) => {
+                  if (isEditing && editingPassword) {
+                    setEditingPassword({
+                      ...editingPassword,
+                      category: value
+                    });
+                  } else {
+                    setNewPassword({
+                      ...newPassword,
+                      category: value
+                    });
+                  }
+                }}
               >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Selecionar categoria" />
@@ -398,7 +441,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
               <Label htmlFor="group">Grupo</Label>
               <Select
                 value={passwordData.groupId}
-                onValueChange={(value) => handleChange('groupId', value)}
+                onValueChange={(value) => {
+                  if (isEditing && editingPassword) {
+                    setEditingPassword({
+                      ...editingPassword,
+                      groupId: value
+                    });
+                  } else {
+                    setNewPassword({
+                      ...newPassword,
+                      groupId: value
+                    });
+                  }
+                }}
               >
                 <SelectTrigger id="group">
                   <SelectValue placeholder="Selecionar grupo" />
@@ -449,7 +504,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     );
   };
 
-  // Search filter component
   const SearchFilters = () => (
     <Card className="mb-6">
       <CardContent className="pt-6">
