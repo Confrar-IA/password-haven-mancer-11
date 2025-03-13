@@ -1,4 +1,3 @@
-
 // Export shared types from PasswordVault
 export interface User {
   id: string;
@@ -7,6 +6,7 @@ export interface User {
   role: 'admin' | 'user';
   groups: string[];
   password?: string;
+  active?: boolean; // New field to indicate if user is active or disabled
 }
 
 export interface Password {

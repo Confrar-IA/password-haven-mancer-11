@@ -3,8 +3,34 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useStorage } from '../hooks/useStorage';
+import { StorageType } from '../services/storage/StorageFactory';
+import { toast } from "@/components/ui/use-toast";
+import { Database, HardDrive } from 'lucide-react';
 
 const Settings = () => {
+  const { storageType, switchStorageType } = useStorage();
+
+  const handleStorageTypeChange = (checked: boolean) => {
+    const newStorageType: StorageType = checked ? 'mysql' : 'localStorage';
+    
+    try {
+      switchStorageType(newStorageType);
+      toast({
+        title: "Configuração alterada",
+        description: `Modo de armazenamento alterado para ${newStorageType === 'mysql' ? 'Banco de Dados MySQL' : 'Armazenamento Local'}`,
+      });
+    } catch (error) {
+      console.error('Error switching storage type:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o modo de armazenamento",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -17,6 +43,30 @@ const Settings = () => {
               <div className="flex items-center gap-4">
                 <ThemeToggle />
               </div>
+            </div>
+            
+            <div className="border-t border-border pt-4">
+              <h3 className="text-lg font-medium mb-2">Armazenamento</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {storageType === 'mysql' ? 
+                    <Database className="h-5 w-5 text-primary" /> : 
+                    <HardDrive className="h-5 w-5 text-primary" />
+                  }
+                  <Label className="text-base font-medium">
+                    Usar Banco de Dados MySQL
+                  </Label>
+                </div>
+                <Switch 
+                  checked={storageType === 'mysql'} 
+                  onCheckedChange={handleStorageTypeChange}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {storageType === 'mysql' 
+                  ? 'Os dados estão sendo armazenados no banco de dados MySQL.' 
+                  : 'Os dados estão sendo armazenados localmente no navegador.'}
+              </p>
             </div>
             
             <div className="border-t border-border pt-4">

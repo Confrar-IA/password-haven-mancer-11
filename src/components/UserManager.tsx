@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, PermissionGroup } from './PasswordVault';
+import { User, PermissionGroup } from '../models/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { CheckboxItem, CheckboxGroup } from "./CheckboxGroup";
-import { Plus, UserPlus, Shield, Edit, Trash, Save, EyeOff, Eye } from 'lucide-react';
+import { Plus, UserPlus, Shield, Edit, Trash, Save, EyeOff, Eye, UserX } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface UserManagerProps {
@@ -39,7 +40,8 @@ const UserManager: React.FC<UserManagerProps> = ({
     fullName: '',
     role: 'user',
     groups: [],
-    password: ''
+    password: '',
+    active: true
   });
   const [newGroup, setNewGroup] = useState<Omit<PermissionGroup, 'id'>>({
     name: '',
@@ -73,7 +75,8 @@ const UserManager: React.FC<UserManagerProps> = ({
       fullName: '',
       role: 'user',
       groups: [],
-      password: ''
+      password: '',
+      active: true
     });
     toast({
       title: "Sucesso",
@@ -192,6 +195,24 @@ const UserManager: React.FC<UserManagerProps> = ({
     }));
   };
 
+  const handleToggleUserActive = (userId: string) => {
+    setUsers(users.map(user => {
+      if (user.id === userId) {
+        const newActive = user.active === false ? true : false;
+        return {
+          ...user,
+          active: newActive
+        };
+      }
+      return user;
+    }));
+    
+    toast({
+      title: "Sucesso",
+      description: "Status do usuário atualizado com sucesso"
+    });
+  };
+
   return <Tabs defaultValue={initialTab} className="w-full">
     <TabsContent value="users" className="space-y-4 mt-4">
       <Card>
@@ -258,6 +279,33 @@ const UserManager: React.FC<UserManagerProps> = ({
             </div>
 
             <div className="space-y-2">
+              <Label>Ativo</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={editingUser ? editingUser.active !== false : newUser.active !== false}
+                  onCheckedChange={(checked) => {
+                    if (editingUser) {
+                      setEditingUser({
+                        ...editingUser,
+                        active: checked
+                      });
+                    } else {
+                      setNewUser({
+                        ...newUser,
+                        active: checked
+                      });
+                    }
+                  }}
+                />
+                <Label>
+                  {(editingUser ? editingUser.active !== false : newUser.active !== false) 
+                    ? "Usuário ativo" 
+                    : "Usuário desativado"}
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label>Grupos de Acesso</Label>
               <div className="border rounded-md p-3 space-y-2">
                 <CheckboxGroup>
@@ -313,14 +361,34 @@ const UserManager: React.FC<UserManagerProps> = ({
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {users.map(user => <Card key={user.id} className="relative overflow-hidden">
+        {users.map(user => <Card key={user.id} className={`relative overflow-hidden ${user.active === false ? 'opacity-70' : ''}`}>
             <CardContent className="pt-6">
-              <h3 className="font-semibold text-lg">{user.fullName}</h3>
-              <p className="text-sm text-gray-500">@{user.username}</p>
-              <p className="text-sm text-gray-500">Senha: {user.password || 'Não definida'}</p>
-              <Badge className="mt-1" variant={user.role === 'admin' ? 'default' : 'outline'}>
-                {user.role === 'admin' ? 'Administrador' : 'Usuário'}
-              </Badge>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-lg">{user.fullName}</h3>
+                  <p className="text-sm text-gray-500">@{user.username}</p>
+                  <p className="text-sm text-gray-500">Senha: {user.password || 'Não definida'}</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                      {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                    </Badge>
+                    <Badge variant={user.active === false ? 'destructive' : 'secondary'}>
+                      {user.active === false ? 'Desativado' : 'Ativo'}
+                    </Badge>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleToggleUserActive(user.id)}
+                  title={user.active === false ? "Ativar usuário" : "Desativar usuário"}
+                >
+                  {user.active === false ? 
+                    <UserPlus className="h-4 w-4" /> : 
+                    <UserX className="h-4 w-4" />
+                  }
+                </Button>
+              </div>
               
               <div className="mt-4">
                 <h4 className="text-sm font-medium mb-2">Grupos de Acesso:</h4>

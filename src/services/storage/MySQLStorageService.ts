@@ -110,6 +110,7 @@ export class MySQLStorageService implements StorageInterface {
   // Authentication
   async login(username: string, password: string): Promise<User | null> {
     throw new Error('MySQL implementation not yet available');
+    // When implemented, we would check if user is active here before allowing login
   }
 
   async getCurrentUser(): Promise<User | null> {

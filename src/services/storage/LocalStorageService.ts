@@ -26,7 +26,7 @@ export class LocalStorageService implements StorageInterface {
 
   async createUser(user: Omit<User, 'id'>): Promise<User> {
     const users = await this.getUsers();
-    const newUser = { ...user, id: this.generateId() };
+    const newUser = { ...user, id: this.generateId(), active: user.active !== false }; // Default to active if not specified
     localStorage.setItem('users', JSON.stringify([...users, newUser]));
     return newUser;
   }
@@ -207,6 +207,11 @@ export class LocalStorageService implements StorageInterface {
     const user = await this.getUserByUsername(username);
     
     if (user && user.password === password) {
+      // Check if user is active
+      if (user.active === false) {
+        return null; // Inactive users can't log in
+      }
+
       localStorage.setItem('currentUser', JSON.stringify(user));
       await this.createLog({
         timestamp: Date.now(),
