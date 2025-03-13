@@ -1,11 +1,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { StorageFactory, StorageType } from '../services/storage/StorageFactory';
+import { StorageFactory, StorageType, DatabaseConfig } from '../services/storage/StorageFactory';
 import { User, Password, PasswordCategory, PermissionGroup, LogEntry } from '../models/types';
 
 export function useStorage() {
   // Get the current storage type from StorageFactory
   const [storageType, setStorageType] = useState<StorageType>(StorageFactory.currentType);
+  // Get the current database configuration
+  const [dbConfig, setDbConfig] = useState<DatabaseConfig>(StorageFactory.dbConfig);
   
   // Get the storage instance
   const storage = StorageFactory.getStorage();
@@ -13,6 +15,7 @@ export function useStorage() {
   // Update state when storage type changes
   useEffect(() => {
     setStorageType(StorageFactory.currentType);
+    setDbConfig(StorageFactory.dbConfig);
   }, []);
   
   // Callback to switch storage type
@@ -20,12 +23,20 @@ export function useStorage() {
     StorageFactory.switchStorage(type);
     setStorageType(type);
   }, []);
+  
+  // Callback to update database configuration
+  const updateDbConfig = useCallback((config: DatabaseConfig) => {
+    StorageFactory.updateDbConfig(config);
+    setDbConfig(config);
+  }, []);
 
   // Returns the storage API and the ability to switch storage types
   return {
     storage,
     storageType,
-    switchStorageType
+    switchStorageType,
+    dbConfig,
+    updateDbConfig
   };
 }
 

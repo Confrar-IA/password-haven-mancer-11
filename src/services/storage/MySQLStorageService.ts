@@ -1,15 +1,19 @@
-
 import { StorageInterface } from './StorageInterface';
 import { User, Password, PasswordCategory, PermissionGroup, LogEntry } from '../../models/types';
 import { toast } from "@/components/ui/use-toast";
+import { DatabaseConfig } from './StorageFactory';
 
 // This is a simulated MySQL implementation that uses localStorage as a backend
 // but maintains a separate namespace for MySQL data
 export class MySQLStorageService implements StorageInterface {
-  private readonly PREFIX = 'mysql_';
+  private readonly dbConfig: DatabaseConfig;
+  private readonly PREFIX: string;
   
-  constructor() {
-    console.log('MySQL Storage Service initialized');
+  constructor(dbConfig: DatabaseConfig) {
+    this.dbConfig = dbConfig;
+    this.PREFIX = `mysql_${this.dbConfig.name}_`;
+    
+    console.log('MySQL Storage Service initialized with database:', this.dbConfig.name);
     this.initializeDatabase();
   }
   
@@ -17,7 +21,7 @@ export class MySQLStorageService implements StorageInterface {
   private initializeDatabase() {
     // Check if database is already initialized
     if (!localStorage.getItem(`${this.PREFIX}initialized`)) {
-      console.log('Initializing MySQL database simulation...');
+      console.log(`Initializing MySQL database simulation for ${this.dbConfig.name}...`);
       
       // Set initialized flag
       localStorage.setItem(`${this.PREFIX}initialized`, 'true');
@@ -25,7 +29,7 @@ export class MySQLStorageService implements StorageInterface {
       // Show toast notification
       toast({
         title: "Banco de Dados Inicializado",
-        description: "Conexão com MySQL simulada estabelecida com sucesso.",
+        description: `Conexão com MySQL (${this.dbConfig.name}) simulada estabelecida com sucesso.`,
       });
     }
   }
@@ -254,7 +258,7 @@ export class MySQLStorageService implements StorageInterface {
         action: 'login',
         entityType: 'user',
         entityId: user.id,
-        description: `Login: ${user.username} (MySQL)`,
+        description: `Login: ${user.username} (MySQL: ${this.dbConfig.name})`,
         userId: user.id
       });
       return user;
@@ -277,7 +281,7 @@ export class MySQLStorageService implements StorageInterface {
         action: 'logout',
         entityType: 'user',
         entityId: currentUser.id,
-        description: `Logout: ${currentUser.username} (MySQL)`,
+        description: `Logout: ${currentUser.username} (MySQL: ${this.dbConfig.name})`,
         userId: currentUser.id
       });
     }

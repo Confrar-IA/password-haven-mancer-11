@@ -6,10 +6,29 @@ import { MySQLStorageService } from './MySQLStorageService';
 // Storage types we support
 export type StorageType = 'localStorage' | 'mysql';
 
+// Database configuration interface
+export interface DatabaseConfig {
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+}
+
+// Default database configuration
+const DEFAULT_DB_CONFIG: DatabaseConfig = {
+  name: 'password_vault',
+  host: 'localhost',
+  port: 3306,
+  user: 'admin',
+  password: 'password'
+};
+
 // Factory class to get the right storage implementation
 export class StorageFactory {
   private static instance: StorageInterface;
   private static storageTypeKey = 'passwordVault_storageType';
+  private static dbConfigKey = 'passwordVault_dbConfig';
   
   // Get currently saved storage type from localStorage
   private static getSavedStorageType(): StorageType {
@@ -22,9 +41,25 @@ export class StorageFactory {
     localStorage.setItem(this.storageTypeKey, type);
   }
 
+  // Get currently saved database configuration
+  private static getSavedDbConfig(): DatabaseConfig {
+    const savedConfig = localStorage.getItem(this.dbConfigKey);
+    return savedConfig ? JSON.parse(savedConfig) : DEFAULT_DB_CONFIG;
+  }
+  
+  // Save database configuration to localStorage
+  private static saveDbConfig(config: DatabaseConfig): void {
+    localStorage.setItem(this.dbConfigKey, JSON.stringify(config));
+  }
+
   // Get the current storage type
   public static get currentType(): StorageType {
     return this.getSavedStorageType();
+  }
+  
+  // Get the current database configuration
+  public static get dbConfig(): DatabaseConfig {
+    return this.getSavedDbConfig();
   }
 
   // Get the current storage implementation
@@ -41,6 +76,16 @@ export class StorageFactory {
     this.instance = this.createStorage(type);
     return this.instance;
   }
+  
+  // Update database configuration
+  public static updateDbConfig(config: DatabaseConfig): void {
+    this.saveDbConfig(config);
+    
+    // If we're currently using MySQL, reinitialize the connection
+    if (this.currentType === 'mysql' && this.instance) {
+      this.instance = this.createStorage('mysql');
+    }
+  }
 
   // Create a new storage implementation based on type
   private static createStorage(type: StorageType): StorageInterface {
@@ -48,7 +93,7 @@ export class StorageFactory {
       case 'localStorage':
         return new LocalStorageService();
       case 'mysql':
-        return new MySQLStorageService();
+        return new MySQLStorageService(this.dbConfig);
       default:
         return new LocalStorageService();
     }

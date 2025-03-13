@@ -1,5 +1,6 @@
 
 -- Password Vault Database Schema
+-- Database: password_vault (Default name, configurable in settings)
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
