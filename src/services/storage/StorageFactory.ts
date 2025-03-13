@@ -2,6 +2,7 @@
 import { StorageInterface } from './StorageInterface';
 import { LocalStorageService } from './LocalStorageService';
 import { MySQLStorageService } from './MySQLStorageService';
+import { toast } from "@/components/ui/use-toast";
 
 // Storage types we support
 export type StorageType = 'localStorage' | 'mysql';
@@ -54,11 +55,13 @@ export class StorageFactory {
 
   // Get the current storage type
   public static get currentType(): StorageType {
+    if (typeof window === 'undefined') return 'localStorage';
     return this.getSavedStorageType();
   }
   
   // Get the current database configuration
   public static get dbConfig(): DatabaseConfig {
+    if (typeof window === 'undefined') return DEFAULT_DB_CONFIG;
     return this.getSavedDbConfig();
   }
 
@@ -72,9 +75,27 @@ export class StorageFactory {
 
   // Switch to a different storage implementation
   public static switchStorage(type: StorageType): StorageInterface {
-    this.saveStorageType(type);
-    this.instance = this.createStorage(type);
-    return this.instance;
+    try {
+      this.saveStorageType(type);
+      this.instance = this.createStorage(type);
+      return this.instance;
+    } catch (error) {
+      console.error(`Error switching to ${type} storage:`, error);
+      
+      // If switching to MySQL fails, fallback to localStorage
+      if (type === 'mysql') {
+        toast({
+          title: "Erro na Conexão",
+          description: "Não foi possível conectar ao banco MySQL. Voltando para armazenamento local.",
+          variant: "destructive"
+        });
+        
+        this.saveStorageType('localStorage');
+        this.instance = this.createStorage('localStorage');
+      }
+      
+      return this.instance;
+    }
   }
   
   // Update database configuration
@@ -83,7 +104,20 @@ export class StorageFactory {
     
     // If we're currently using MySQL, reinitialize the connection
     if (this.currentType === 'mysql' && this.instance) {
-      this.instance = this.createStorage('mysql');
+      try {
+        this.instance = this.createStorage('mysql');
+      } catch (error) {
+        console.error('Error reconnecting to MySQL with new config:', error);
+        toast({
+          title: "Erro de Configuração",
+          description: "Não foi possível reconectar ao banco com as novas configurações.",
+          variant: "destructive"
+        });
+        
+        // Fallback to localStorage
+        this.saveStorageType('localStorage');
+        this.instance = this.createStorage('localStorage');
+      }
     }
   }
 
@@ -93,7 +127,18 @@ export class StorageFactory {
       case 'localStorage':
         return new LocalStorageService();
       case 'mysql':
-        return new MySQLStorageService(this.dbConfig);
+        try {
+          return new MySQLStorageService(this.dbConfig);
+        } catch (error) {
+          console.error('Failed to create MySQL storage:', error);
+          toast({
+            title: "Erro na Conexão",
+            description: "Falha ao inicializar conexão MySQL. Usando armazenamento local.",
+            variant: "destructive"
+          });
+          this.saveStorageType('localStorage');
+          return new LocalStorageService();
+        }
       default:
         return new LocalStorageService();
     }
