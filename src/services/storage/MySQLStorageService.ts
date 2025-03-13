@@ -1,341 +1,728 @@
 
 import { StorageInterface } from './StorageInterface';
 import { User, Password, PasswordCategory, PermissionGroup, LogEntry } from '../../models/types';
-import { toast } from "@/components/ui/use-toast";
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseConfig } from './StorageFactory';
+import { toast } from "@/components/ui/use-toast";
 
-// Uma implementação simulada de MySQL usando localStorage
+/**
+ * MySQL Storage Service
+ * 
+ * This service implements the StorageInterface for MySQL.
+ * In browser environments, it simulates MySQL using localStorage with table prefixes.
+ */
 export class MySQLStorageService implements StorageInterface {
-  private readonly dbConfig: DatabaseConfig;
-  private prefix: string;
-  private isConnected: boolean = false;
-  
-  constructor(dbConfig: DatabaseConfig) {
-    this.dbConfig = dbConfig;
-    this.prefix = `mysql_${dbConfig.name}_`;
-    this.initializeDatabase();
+  private dbConfig: DatabaseConfig;
+  private simulation: boolean = true;
+  private prefix: string = 'mysql_';
+  private tables: Record<string, string> = {
+    users: this.prefix + 'users',
+    passwords: this.prefix + 'passwords',
+    categories: this.prefix + 'categories',
+    groups: this.prefix + 'groups',
+    logs: this.prefix + 'logs',
+  };
+
+  constructor(config: DatabaseConfig) {
+    this.dbConfig = config;
+    this.initializeSimulation();
+    this.checkServerConnection();
   }
   
-  // Inicializar o banco de dados simulado
-  private async initializeDatabase() {
+  // Check if we can connect to the real MySQL server
+  private async checkServerConnection(): Promise<boolean> {
+    if (typeof window === 'undefined') {
+      // Node.js environment - assume real connection
+      return true;
+    }
+    
     try {
-      console.log(`Initializing simulated MySQL database: ${this.dbConfig.name}`);
+      const response = await fetch(`${this.dbConfig.apiUrl}/status`);
+      if (response.ok) {
+        const data = await response.json();
+        this.simulation = data.status !== 'connected';
+        return !this.simulation;
+      }
+      return false;
+    } catch (error) {
+      console.error("Cannot connect to MySQL server:", error);
+      this.simulation = true;
+      return false;
+    }
+  }
+  
+  // Initialize simulation tables if they don't exist
+  private initializeSimulation(): void {
+    if (typeof window === 'undefined') return;
+    
+    // Create tables if they don't exist
+    Object.values(this.tables).forEach(table => {
+      if (!localStorage.getItem(table)) {
+        localStorage.setItem(table, JSON.stringify([]));
+      }
+    });
+  }
+  
+  // Fetch data from a simulated table
+  private getTable<T>(tableName: string): T[] {
+    const data = localStorage.getItem(tableName);
+    return data ? JSON.parse(data) : [];
+  }
+  
+  // Save data to a simulated table
+  private saveTable<T>(tableName: string, data: T[]): void {
+    localStorage.setItem(tableName, JSON.stringify(data));
+  }
+  
+  // Make API request to the server
+  private async apiRequest<T>(
+    endpoint: string, 
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+    body?: any
+  ): Promise<T> {
+    if (this.simulation) {
+      throw new Error('Cannot make API request in simulation mode');
+    }
+    
+    try {
+      const response = await fetch(`${this.dbConfig.apiUrl}${endpoint}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
       
-      // Verificar se já temos tabelas inicializadas
-      const hasUsers = localStorage.getItem(`${this.prefix}users`);
-      
-      if (!hasUsers) {
-        // Inicializar tabelas vazias
-        localStorage.setItem(`${this.prefix}users`, JSON.stringify([]));
-        localStorage.setItem(`${this.prefix}passwords`, JSON.stringify([]));
-        localStorage.setItem(`${this.prefix}password_categories`, JSON.stringify([]));
-        localStorage.setItem(`${this.prefix}permission_groups`, JSON.stringify([]));
-        localStorage.setItem(`${this.prefix}logs`, JSON.stringify([]));
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
       
-      this.isConnected = true;
-      
-      toast({
-        title: "Modo MySQL Simulado",
-        description: `Conectado ao banco de dados simulado (${this.dbConfig.name}).`,
-      });
+      return await response.json();
     } catch (error) {
-      console.error('Erro ao inicializar banco MySQL simulado:', error);
-      this.isConnected = false;
+      console.error(`API request error (${method} ${endpoint}):`, error);
       
+      // If API request fails, switch to simulation mode
+      this.simulation = true;
       toast({
         title: "Erro na Conexão",
-        description: "Não foi possível inicializar o banco de dados MySQL simulado.",
-        variant: "destructive",
+        description: "Falha na comunicação com o servidor. Usando modo de simulação.",
+        variant: "destructive"
       });
       
       throw error;
     }
   }
+
+  // User management
   
-  // Gerar ID único
-  private generateId(): string {
-    return Date.now().toString();
-  }
-  
-  // Operações de usuário
   async getUsers(): Promise<User[]> {
-    const users = localStorage.getItem(`${this.prefix}users`);
-    return users ? JSON.parse(users) : [];
-  }
-
-  async getUserById(id: string): Promise<User | null> {
-    const users = await this.getUsers();
-    return users.find(user => user.id === id) || null;
-  }
-
-  async getUserByUsername(username: string): Promise<User | null> {
-    const users = await this.getUsers();
-    return users.find(user => user.username === username) || null;
-  }
-
-  async createUser(user: Omit<User, 'id'>): Promise<User> {
-    const id = this.generateId();
-    const active = user.active !== false;
-    const newUser = { ...user, id, active };
-    
-    const users = await this.getUsers();
-    users.push(newUser);
-    localStorage.setItem(`${this.prefix}users`, JSON.stringify(users));
-    
-    return newUser;
-  }
-
-  async updateUser(id: string, userData: Partial<User>): Promise<User> {
-    const users = await this.getUsers();
-    const index = users.findIndex(user => user.id === id);
-    
-    if (index === -1) {
-      throw new Error(`User with id ${id} not found`);
+    if (this.simulation) {
+      return this.getTable<User>(this.tables.users);
     }
     
-    const updatedUser = { ...users[index], ...userData };
-    users[index] = updatedUser;
-    localStorage.setItem(`${this.prefix}users`, JSON.stringify(users));
-    
-    return updatedUser;
-  }
-
-  async deleteUser(id: string): Promise<boolean> {
-    const users = await this.getUsers();
-    const filteredUsers = users.filter(user => user.id !== id);
-    
-    if (filteredUsers.length === users.length) {
-      return false; // User not found
+    try {
+      return await this.apiRequest<User[]>('/users');
+    } catch (error) {
+      // Fallback to simulation
+      return this.getTable<User>(this.tables.users);
     }
-    
-    localStorage.setItem(`${this.prefix}users`, JSON.stringify(filteredUsers));
-    return true;
   }
   
-  // Operações de senha
-  async getPasswords(): Promise<Password[]> {
-    const passwords = localStorage.getItem(`${this.prefix}passwords`);
-    return passwords ? JSON.parse(passwords) : [];
-  }
-
-  async getPasswordById(id: string): Promise<Password | null> {
-    const passwords = await this.getPasswords();
-    return passwords.find(password => password.id === id) || null;
-  }
-
-  async createPassword(password: Omit<Password, 'id'>): Promise<Password> {
-    const id = this.generateId();
-    const newPassword = { ...password, id };
+  async createUser(userData: Omit<User, 'id'>): Promise<User> {
+    const newUser: User = {
+      id: uuidv4(),
+      ...userData,
+      created: new Date().toISOString(),
+      lastLogin: null
+    };
     
-    const passwords = await this.getPasswords();
-    passwords.push(newPassword);
-    localStorage.setItem(`${this.prefix}passwords`, JSON.stringify(passwords));
-    
-    return newPassword;
-  }
-
-  async updatePassword(id: string, passwordData: Partial<Password>): Promise<Password> {
-    const passwords = await this.getPasswords();
-    const index = passwords.findIndex(password => password.id === id);
-    
-    if (index === -1) {
-      throw new Error(`Password with id ${id} not found`);
+    if (this.simulation) {
+      const users = this.getTable<User>(this.tables.users);
+      users.push(newUser);
+      this.saveTable(this.tables.users, users);
+      return newUser;
     }
     
-    const updatedPassword = { ...passwords[index], ...passwordData };
-    passwords[index] = updatedPassword;
-    localStorage.setItem(`${this.prefix}passwords`, JSON.stringify(passwords));
-    
-    return updatedPassword;
-  }
-
-  async deletePassword(id: string): Promise<boolean> {
-    const passwords = await this.getPasswords();
-    const filteredPasswords = passwords.filter(password => password.id !== id);
-    
-    if (filteredPasswords.length === passwords.length) {
-      return false; // Password not found
-    }
-    
-    localStorage.setItem(`${this.prefix}passwords`, JSON.stringify(filteredPasswords));
-    return true;
-  }
-
-  // Operações de categoria
-  async getCategories(): Promise<PasswordCategory[]> {
-    const categories = localStorage.getItem(`${this.prefix}password_categories`);
-    return categories ? JSON.parse(categories) : [];
-  }
-
-  async getCategoryById(id: string): Promise<PasswordCategory | null> {
-    const categories = await this.getCategories();
-    return categories.find(category => category.id === id) || null;
-  }
-
-  async createCategory(category: Omit<PasswordCategory, 'id'>): Promise<PasswordCategory> {
-    const id = this.generateId();
-    const newCategory = { ...category, id };
-    
-    const categories = await this.getCategories();
-    categories.push(newCategory);
-    localStorage.setItem(`${this.prefix}password_categories`, JSON.stringify(categories));
-    
-    return newCategory;
-  }
-
-  async updateCategory(id: string, categoryData: Partial<PasswordCategory>): Promise<PasswordCategory> {
-    const categories = await this.getCategories();
-    const index = categories.findIndex(category => category.id === id);
-    
-    if (index === -1) {
-      throw new Error(`Category with id ${id} not found`);
-    }
-    
-    const updatedCategory = { ...categories[index], ...categoryData };
-    categories[index] = updatedCategory;
-    localStorage.setItem(`${this.prefix}password_categories`, JSON.stringify(categories));
-    
-    return updatedCategory;
-  }
-
-  async deleteCategory(id: string): Promise<boolean> {
-    const categories = await this.getCategories();
-    const filteredCategories = categories.filter(category => category.id !== id);
-    
-    if (filteredCategories.length === categories.length) {
-      return false; // Category not found
-    }
-    
-    localStorage.setItem(`${this.prefix}password_categories`, JSON.stringify(filteredCategories));
-    return true;
-  }
-
-  // Operações de grupo
-  async getGroups(): Promise<PermissionGroup[]> {
-    const groups = localStorage.getItem(`${this.prefix}permission_groups`);
-    return groups ? JSON.parse(groups) : [];
-  }
-
-  async getGroupById(id: string): Promise<PermissionGroup | null> {
-    const groups = await this.getGroups();
-    return groups.find(group => group.id === id) || null;
-  }
-
-  async createGroup(group: Omit<PermissionGroup, 'id'>): Promise<PermissionGroup> {
-    const id = this.generateId();
-    const newGroup = { ...group, id };
-    
-    const groups = await this.getGroups();
-    groups.push(newGroup);
-    localStorage.setItem(`${this.prefix}permission_groups`, JSON.stringify(groups));
-    
-    return newGroup;
-  }
-
-  async updateGroup(id: string, groupData: Partial<PermissionGroup>): Promise<PermissionGroup> {
-    const groups = await this.getGroups();
-    const index = groups.findIndex(group => group.id === id);
-    
-    if (index === -1) {
-      throw new Error(`Group with id ${id} not found`);
-    }
-    
-    const updatedGroup = { ...groups[index], ...groupData };
-    groups[index] = updatedGroup;
-    localStorage.setItem(`${this.prefix}permission_groups`, JSON.stringify(groups));
-    
-    return updatedGroup;
-  }
-
-  async deleteGroup(id: string): Promise<boolean> {
-    const groups = await this.getGroups();
-    const filteredGroups = groups.filter(group => group.id !== id);
-    
-    if (filteredGroups.length === groups.length) {
-      return false; // Group not found
-    }
-    
-    localStorage.setItem(`${this.prefix}permission_groups`, JSON.stringify(filteredGroups));
-    return true;
-  }
-
-  // Operações de log
-  async getLogs(): Promise<LogEntry[]> {
-    const logs = localStorage.getItem(`${this.prefix}logs`);
-    return logs ? JSON.parse(logs) : [];
-  }
-
-  async createLog(log: Omit<LogEntry, 'id'>): Promise<LogEntry> {
-    const id = this.generateId();
-    const newLog = { ...log, id };
-    
-    const logs = await this.getLogs();
-    logs.push(newLog);
-    localStorage.setItem(`${this.prefix}logs`, JSON.stringify(logs));
-    
-    return newLog;
-  }
-
-  // Autenticação
-  async login(username: string, password: string): Promise<User | null> {
     try {
-      const users = await this.getUsers();
-      const user = users.find(u => u.username === username && u.password === password);
+      return await this.apiRequest<User>('/users', 'POST', userData);
+    } catch (error) {
+      // Fallback to simulation
+      const users = this.getTable<User>(this.tables.users);
+      users.push(newUser);
+      this.saveTable(this.tables.users, users);
+      return newUser;
+    }
+  }
+  
+  async getUserById(id: string): Promise<User | null> {
+    if (this.simulation) {
+      const users = this.getTable<User>(this.tables.users);
+      return users.find(user => user.id === id) || null;
+    }
+    
+    try {
+      return await this.apiRequest<User>(`/users/${id}`);
+    } catch (error) {
+      // Fallback to simulation
+      const users = this.getTable<User>(this.tables.users);
+      return users.find(user => user.id === id) || null;
+    }
+  }
+  
+  async updateUser(id: string, userData: Partial<User>): Promise<User> {
+    if (this.simulation) {
+      const users = this.getTable<User>(this.tables.users);
+      const index = users.findIndex(user => user.id === id);
+      
+      if (index === -1) {
+        throw new Error(`User with ID ${id} not found`);
+      }
+      
+      const updatedUser = { ...users[index], ...userData };
+      users[index] = updatedUser;
+      this.saveTable(this.tables.users, users);
+      return updatedUser;
+    }
+    
+    try {
+      return await this.apiRequest<User>(`/users/${id}`, 'PUT', userData);
+    } catch (error) {
+      // Fallback to simulation
+      const users = this.getTable<User>(this.tables.users);
+      const index = users.findIndex(user => user.id === id);
+      
+      if (index === -1) {
+        throw new Error(`User with ID ${id} not found`);
+      }
+      
+      const updatedUser = { ...users[index], ...userData };
+      users[index] = updatedUser;
+      this.saveTable(this.tables.users, users);
+      return updatedUser;
+    }
+  }
+  
+  async deleteUser(id: string): Promise<boolean> {
+    if (this.simulation) {
+      const users = this.getTable<User>(this.tables.users);
+      const filteredUsers = users.filter(user => user.id !== id);
+      
+      if (filteredUsers.length === users.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.users, filteredUsers);
+      return true;
+    }
+    
+    try {
+      await this.apiRequest<void>(`/users/${id}`, 'DELETE');
+      return true;
+    } catch (error) {
+      // Fallback to simulation
+      const users = this.getTable<User>(this.tables.users);
+      const filteredUsers = users.filter(user => user.id !== id);
+      
+      if (filteredUsers.length === users.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.users, filteredUsers);
+      return true;
+    }
+  }
+  
+  // Password management
+  
+  async getPasswords(): Promise<Password[]> {
+    if (this.simulation) {
+      return this.getTable<Password>(this.tables.passwords);
+    }
+    
+    try {
+      return await this.apiRequest<Password[]>('/passwords');
+    } catch (error) {
+      // Fallback to simulation
+      return this.getTable<Password>(this.tables.passwords);
+    }
+  }
+  
+  async createPassword(passwordData: Omit<Password, 'id'>): Promise<Password> {
+    const newPassword: Password = {
+      id: uuidv4(),
+      ...passwordData,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+    };
+    
+    if (this.simulation) {
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      passwords.push(newPassword);
+      this.saveTable(this.tables.passwords, passwords);
+      return newPassword;
+    }
+    
+    try {
+      // Map category to category_id as expected by server
+      const serverPasswordData = {
+        ...passwordData,
+        category_id: passwordData.category,
+      };
+      
+      return await this.apiRequest<Password>('/passwords', 'POST', serverPasswordData);
+    } catch (error) {
+      // Fallback to simulation
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      passwords.push(newPassword);
+      this.saveTable(this.tables.passwords, passwords);
+      return newPassword;
+    }
+  }
+  
+  async getPasswordById(id: string): Promise<Password | null> {
+    if (this.simulation) {
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      return passwords.find(password => password.id === id) || null;
+    }
+    
+    try {
+      return await this.apiRequest<Password>(`/passwords/${id}`);
+    } catch (error) {
+      // Fallback to simulation
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      return passwords.find(password => password.id === id) || null;
+    }
+  }
+  
+  async updatePassword(id: string, passwordData: Partial<Password>): Promise<Password> {
+    if (this.simulation) {
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      const index = passwords.findIndex(password => password.id === id);
+      
+      if (index === -1) {
+        throw new Error(`Password with ID ${id} not found`);
+      }
+      
+      const updatedPassword = { 
+        ...passwords[index], 
+        ...passwordData,
+        updated: new Date().toISOString()
+      };
+      
+      passwords[index] = updatedPassword;
+      this.saveTable(this.tables.passwords, passwords);
+      return updatedPassword;
+    }
+    
+    try {
+      // Map category to category_id as expected by server
+      const serverPasswordData = {
+        ...passwordData,
+        category_id: passwordData.category,
+        updated: new Date().toISOString()
+      };
+      
+      return await this.apiRequest<Password>(`/passwords/${id}`, 'PUT', serverPasswordData);
+    } catch (error) {
+      // Fallback to simulation
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      const index = passwords.findIndex(password => password.id === id);
+      
+      if (index === -1) {
+        throw new Error(`Password with ID ${id} not found`);
+      }
+      
+      const updatedPassword = { 
+        ...passwords[index], 
+        ...passwordData,
+        updated: new Date().toISOString()
+      };
+      
+      passwords[index] = updatedPassword;
+      this.saveTable(this.tables.passwords, passwords);
+      return updatedPassword;
+    }
+  }
+  
+  async deletePassword(id: string): Promise<boolean> {
+    if (this.simulation) {
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      const filteredPasswords = passwords.filter(password => password.id !== id);
+      
+      if (filteredPasswords.length === passwords.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.passwords, filteredPasswords);
+      return true;
+    }
+    
+    try {
+      await this.apiRequest<void>(`/passwords/${id}`, 'DELETE');
+      return true;
+    } catch (error) {
+      // Fallback to simulation
+      const passwords = this.getTable<Password>(this.tables.passwords);
+      const filteredPasswords = passwords.filter(password => password.id !== id);
+      
+      if (filteredPasswords.length === passwords.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.passwords, filteredPasswords);
+      return true;
+    }
+  }
+  
+  // Category management
+  
+  async getCategories(): Promise<PasswordCategory[]> {
+    if (this.simulation) {
+      return this.getTable<PasswordCategory>(this.tables.categories);
+    }
+    
+    try {
+      return await this.apiRequest<PasswordCategory[]>('/categories');
+    } catch (error) {
+      // Fallback to simulation
+      return this.getTable<PasswordCategory>(this.tables.categories);
+    }
+  }
+  
+  async createCategory(categoryData: Omit<PasswordCategory, 'id'>): Promise<PasswordCategory> {
+    const newCategory: PasswordCategory = {
+      id: uuidv4(),
+      ...categoryData
+    };
+    
+    if (this.simulation) {
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      categories.push(newCategory);
+      this.saveTable(this.tables.categories, categories);
+      return newCategory;
+    }
+    
+    try {
+      return await this.apiRequest<PasswordCategory>('/categories', 'POST', categoryData);
+    } catch (error) {
+      // Fallback to simulation
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      categories.push(newCategory);
+      this.saveTable(this.tables.categories, categories);
+      return newCategory;
+    }
+  }
+  
+  async updateCategory(id: string, categoryData: Partial<PasswordCategory>): Promise<PasswordCategory> {
+    if (this.simulation) {
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      const index = categories.findIndex(category => category.id === id);
+      
+      if (index === -1) {
+        throw new Error(`Category with ID ${id} not found`);
+      }
+      
+      const updatedCategory = { ...categories[index], ...categoryData };
+      categories[index] = updatedCategory;
+      this.saveTable(this.tables.categories, categories);
+      return updatedCategory;
+    }
+    
+    try {
+      return await this.apiRequest<PasswordCategory>(`/categories/${id}`, 'PUT', categoryData);
+    } catch (error) {
+      // Fallback to simulation
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      const index = categories.findIndex(category => category.id === id);
+      
+      if (index === -1) {
+        throw new Error(`Category with ID ${id} not found`);
+      }
+      
+      const updatedCategory = { ...categories[index], ...categoryData };
+      categories[index] = updatedCategory;
+      this.saveTable(this.tables.categories, categories);
+      return updatedCategory;
+    }
+  }
+  
+  async deleteCategory(id: string): Promise<boolean> {
+    if (this.simulation) {
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      const filteredCategories = categories.filter(category => category.id !== id);
+      
+      if (filteredCategories.length === categories.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.categories, filteredCategories);
+      return true;
+    }
+    
+    try {
+      await this.apiRequest<void>(`/categories/${id}`, 'DELETE');
+      return true;
+    } catch (error) {
+      // Fallback to simulation
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      const filteredCategories = categories.filter(category => category.id !== id);
+      
+      if (filteredCategories.length === categories.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.categories, filteredCategories);
+      return true;
+    }
+  }
+  
+  // Group management
+  
+  async getGroups(): Promise<PermissionGroup[]> {
+    if (this.simulation) {
+      return this.getTable<PermissionGroup>(this.tables.groups);
+    }
+    
+    try {
+      return await this.apiRequest<PermissionGroup[]>('/groups');
+    } catch (error) {
+      // Fallback to simulation
+      return this.getTable<PermissionGroup>(this.tables.groups);
+    }
+  }
+  
+  async createGroup(groupData: Omit<PermissionGroup, 'id'>): Promise<PermissionGroup> {
+    const newGroup: PermissionGroup = {
+      id: uuidv4(),
+      ...groupData
+    };
+    
+    if (this.simulation) {
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      groups.push(newGroup);
+      this.saveTable(this.tables.groups, groups);
+      return newGroup;
+    }
+    
+    try {
+      return await this.apiRequest<PermissionGroup>('/groups', 'POST', groupData);
+    } catch (error) {
+      // Fallback to simulation
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      groups.push(newGroup);
+      this.saveTable(this.tables.groups, groups);
+      return newGroup;
+    }
+  }
+  
+  async updateGroup(id: string, groupData: Partial<PermissionGroup>): Promise<PermissionGroup> {
+    if (this.simulation) {
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      const index = groups.findIndex(group => group.id === id);
+      
+      if (index === -1) {
+        throw new Error(`Group with ID ${id} not found`);
+      }
+      
+      const updatedGroup = { ...groups[index], ...groupData };
+      groups[index] = updatedGroup;
+      this.saveTable(this.tables.groups, groups);
+      return updatedGroup;
+    }
+    
+    try {
+      return await this.apiRequest<PermissionGroup>(`/groups/${id}`, 'PUT', groupData);
+    } catch (error) {
+      // Fallback to simulation
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      const index = groups.findIndex(group => group.id === id);
+      
+      if (index === -1) {
+        throw new Error(`Group with ID ${id} not found`);
+      }
+      
+      const updatedGroup = { ...groups[index], ...groupData };
+      groups[index] = updatedGroup;
+      this.saveTable(this.tables.groups, groups);
+      return updatedGroup;
+    }
+  }
+  
+  async deleteGroup(id: string): Promise<boolean> {
+    if (this.simulation) {
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      const filteredGroups = groups.filter(group => group.id !== id);
+      
+      if (filteredGroups.length === groups.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.groups, filteredGroups);
+      return true;
+    }
+    
+    try {
+      await this.apiRequest<void>(`/groups/${id}`, 'DELETE');
+      return true;
+    } catch (error) {
+      // Fallback to simulation
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      const filteredGroups = groups.filter(group => group.id !== id);
+      
+      if (filteredGroups.length === groups.length) {
+        return false;
+      }
+      
+      this.saveTable(this.tables.groups, filteredGroups);
+      return true;
+    }
+  }
+  
+  // Log management
+  
+  async getLogs(): Promise<LogEntry[]> {
+    if (this.simulation) {
+      return this.getTable<LogEntry>(this.tables.logs);
+    }
+    
+    try {
+      return await this.apiRequest<LogEntry[]>('/logs');
+    } catch (error) {
+      // Fallback to simulation
+      return this.getTable<LogEntry>(this.tables.logs);
+    }
+  }
+  
+  async createLog(logData: Omit<LogEntry, 'id'>): Promise<LogEntry> {
+    const newLog: LogEntry = {
+      id: uuidv4(),
+      ...logData,
+      timestamp: new Date().toISOString()
+    };
+    
+    if (this.simulation) {
+      const logs = this.getTable<LogEntry>(this.tables.logs);
+      logs.push(newLog);
+      this.saveTable(this.tables.logs, logs);
+      return newLog;
+    }
+    
+    try {
+      return await this.apiRequest<LogEntry>('/logs', 'POST', logData);
+    } catch (error) {
+      // Fallback to simulation
+      const logs = this.getTable<LogEntry>(this.tables.logs);
+      logs.push(newLog);
+      this.saveTable(this.tables.logs, logs);
+      return newLog;
+    }
+  }
+  
+  // Authentication
+  
+  async login(username: string, password: string): Promise<User> {
+    // In simulation mode, find user in localStorage
+    if (this.simulation) {
+      const users = this.getTable<User>(this.tables.users);
+      const user = users.find(u => 
+        u.username === username && u.password === password
+      );
       
       if (!user) {
-        return null;
+        throw new Error('Invalid username or password');
       }
       
-      // Verificar se o usuário está ativo
-      if (user.active === false) {
-        toast({
-          title: "Login negado",
-          description: "Sua conta está desativada. Entre em contato com o administrador.",
-          variant: "destructive"
-        });
-        return null; // Usuários inativos não podem fazer login
-      }
+      // Update last login timestamp
+      const updatedUser = {
+        ...user,
+        lastLogin: new Date().toISOString()
+      };
       
-      // Armazenar usuário atual no localStorage para persistência de sessão
-      localStorage.setItem(`${this.prefix}currentUser`, JSON.stringify(user));
+      await this.updateUser(user.id, { lastLogin: updatedUser.lastLogin });
       
-      // Registrar ação de login
+      // Store currentUser
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      // Create log entry
       await this.createLog({
-        timestamp: Date.now(),
+        userId: user.id,
         action: 'login',
-        entityType: 'user',
-        entityId: user.id,
-        description: `Login: ${user.username} (MySQL: ${this.dbConfig.name})`,
-        userId: user.id
+        details: `User ${username} logged in`,
+        timestamp: new Date().toISOString()
       });
       
+      return updatedUser;
+    }
+    
+    try {
+      const user = await this.apiRequest<User>('/auth/login', 'POST', { username, password });
+      localStorage.setItem('currentUser', JSON.stringify(user));
       return user;
     } catch (error) {
-      console.error('Erro de login:', error);
-      return null;
-    }
-  }
-
-  async getCurrentUser(): Promise<User | null> {
-    const storedUser = localStorage.getItem(`${this.prefix}currentUser`);
-    return storedUser ? JSON.parse(storedUser) : null;
-  }
-
-  async logout(): Promise<void> {
-    const currentUser = await this.getCurrentUser();
-    
-    if (currentUser) {
+      // Fallback to simulation
+      const users = this.getTable<User>(this.tables.users);
+      const user = users.find(u => 
+        u.username === username && u.password === password
+      );
+      
+      if (!user) {
+        throw new Error('Invalid username or password');
+      }
+      
+      // Update last login timestamp
+      const updatedUser = {
+        ...user,
+        lastLogin: new Date().toISOString()
+      };
+      
+      await this.updateUser(user.id, { lastLogin: updatedUser.lastLogin });
+      
+      // Store currentUser
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      // Create log entry
       await this.createLog({
-        timestamp: Date.now(),
-        action: 'logout',
-        entityType: 'user',
-        entityId: currentUser.id,
-        description: `Logout: ${currentUser.username} (MySQL: ${this.dbConfig.name})`,
-        userId: currentUser.id
+        userId: user.id,
+        action: 'login',
+        details: `User ${username} logged in`,
+        timestamp: new Date().toISOString()
       });
       
-      localStorage.removeItem(`${this.prefix}currentUser`);
+      return updatedUser;
     }
+  }
+  
+  async logout(): Promise<void> {
+    const currentUser = this.getCurrentUser();
+    
+    if (currentUser) {
+      // Create log entry
+      await this.createLog({
+        userId: currentUser.id,
+        action: 'logout',
+        details: `User ${currentUser.username} logged out`,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    localStorage.removeItem('currentUser');
+    
+    // Dispatch event to notify the app about authentication change
+    const event = new Event('auth-change');
+    window.dispatchEvent(event);
+    
+    if (!this.simulation) {
+      try {
+        await this.apiRequest<void>('/auth/logout', 'POST');
+      } catch (error) {
+        // Just log the error, the user is already logged out locally
+        console.error('Error during API logout:', error);
+      }
+    }
+  }
+  
+  getCurrentUser(): User | null {
+    const userData = localStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
   }
 }

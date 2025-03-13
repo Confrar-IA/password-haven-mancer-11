@@ -11,21 +11,42 @@ import Settings from "./pages/Settings";
 import { useState, useEffect } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { StorageFactory } from "./services/storage/StorageFactory";
+import { toast } from "./components/ui/use-toast";
 
-// Inicializar o cliente de consulta
+// Initialize the query client
 const queryClient = new QueryClient();
 
-// Garantir que o StorageFactory seja inicializado
+// Ensure that the StorageFactory is initialized
 StorageFactory.getStorage();
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Verificar se o usuário está logado
+  // Check server connection on startup
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        await StorageFactory.checkServerConnection();
+      } catch (error) {
+        console.error("Server connection check failed:", error);
+        toast({
+          title: "Informação",
+          description: "Servidor MySQL não encontrado. Usando modo de simulação.",
+          variant: "default"
+        });
+      }
+    };
+    
+    checkServer();
+  }, []);
+
+  // Check if the user is logged in
   useEffect(() => {
     const checkAuth = () => {
       const currentUser = localStorage.getItem('currentUser');
       setIsAuthenticated(!!currentUser);
+      setIsLoading(false);
     };
 
     checkAuth();
@@ -37,6 +58,15 @@ const App = () => {
       window.removeEventListener('auth-change', checkAuth);
     };
   }, []);
+
+  // Show a loading state until we've checked authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900 dark:border-gray-100"></div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
