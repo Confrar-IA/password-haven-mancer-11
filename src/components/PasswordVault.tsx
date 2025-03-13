@@ -39,6 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
@@ -52,6 +53,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   const [groups, setGroups] = useState<PermissionGroup[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState('passwords');
+  const [passwordTab, setPasswordTab] = useState('list');
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'default',
     username: 'default',
@@ -90,6 +92,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   }, [users]);
 
   const loadFromLocalStorage = () => {
+    // ... keep existing code (loading data from localStorage)
+    
     const storedPasswords = localStorage.getItem('passwords');
     if (storedPasswords) {
       setPasswords(JSON.parse(storedPasswords));
@@ -116,6 +120,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleAddPassword = () => {
+    // ... keep existing code (add password functionality)
+    
     if (!newPassword.title || !newPassword.username || !newPassword.password) {
       toast({
         title: "Erro",
@@ -136,9 +142,14 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       title: "Sucesso",
       description: "Senha adicionada com sucesso"
     });
+    
+    // After adding a password, switch to list view
+    setPasswordTab('list');
   };
 
   const handleDeletePassword = (id: string) => {
+    // ... keep existing code (delete password functionality)
+    
     setPasswords(passwords.filter(password => password.id !== id));
     toast({
       title: "Sucesso",
@@ -147,6 +158,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleAddCategory = (category: PasswordCategory) => {
+    // ... keep existing code (add category functionality)
+    
     setCategories([...categories, category]);
     toast({
       title: "Sucesso",
@@ -155,6 +168,8 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleDeleteCategory = (id: string) => {
+    // ... keep existing code (delete category functionality)
+    
     // Check if any passwords are using this category
     const passwordsWithCategory = passwords.filter(password => password.category === id);
     if (passwordsWithCategory.length > 0) {
@@ -177,6 +192,18 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     setCurrentUser(user);
   };
 
+  // Simple settings component
+  const SettingsContent = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <h2 className="text-2xl font-semibold mb-4">Configurações</h2>
+          <p className="text-gray-500">Opções de configuração estarão disponíveis em breve.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
     <>
       <AppSidebar
@@ -188,70 +215,81 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       />
       <div className="flex-1 overflow-y-auto p-6">
         {activeTab === 'passwords' && (
-          <>
-            <Card>
-              <CardContent className="pt-6">
-                <h2 className="text-2xl font-semibold mb-4">Adicionar Nova Senha</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Título</Label>
-                    <Input
-                      id="title"
-                      placeholder="Título"
-                      value={newPassword.title}
-                      onChange={(e) => setNewPassword({ ...newPassword, title: e.target.value })}
-                    />
-                  </div>
+          <div className="space-y-6">
+            <Tabs value={passwordTab} onValueChange={setPasswordTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="list">Visualizar Senhas</TabsTrigger>
+                <TabsTrigger value="add">Adicionar Senha</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="add">
+                <Card>
+                  <CardContent className="pt-6">
+                    <h2 className="text-2xl font-semibold mb-4">Adicionar Nova Senha</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Título</Label>
+                        <Input
+                          id="title"
+                          placeholder="Título"
+                          value={newPassword.title}
+                          onChange={(e) => setNewPassword({ ...newPassword, title: e.target.value })}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Nome de Usuário</Label>
-                    <Input
-                      id="username"
-                      placeholder="Nome de Usuário"
-                      value={newPassword.username}
-                      onChange={(e) => setNewPassword({ ...newPassword, username: e.target.value })}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Nome de Usuário</Label>
+                        <Input
+                          id="username"
+                          placeholder="Nome de Usuário"
+                          value={newPassword.username}
+                          onChange={(e) => setNewPassword({ ...newPassword, username: e.target.value })}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Senha"
-                      value={newPassword.password}
-                      onChange={(e) => setNewPassword({ ...newPassword, password: e.target.value })}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Senha</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Senha"
+                          value={newPassword.password}
+                          onChange={(e) => setNewPassword({ ...newPassword, password: e.target.value })}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="url">URL</Label>
-                    <Input
-                      id="url"
-                      type="url"
-                      placeholder="URL"
-                      value={newPassword.url}
-                      onChange={(e) => setNewPassword({ ...newPassword, url: e.target.value })}
-                    />
-                  </div>
-                  
-                  <div className="mt-4 col-span-2 flex justify-end">
-                    <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Senha
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <PasswordList
-              passwords={passwords}
-              categories={categories}
-              groups={groups}
-              onDelete={handleDeletePassword}
-            />
-          </>
+                      <div className="space-y-2">
+                        <Label htmlFor="url">URL</Label>
+                        <Input
+                          id="url"
+                          type="url"
+                          placeholder="URL"
+                          value={newPassword.url}
+                          onChange={(e) => setNewPassword({ ...newPassword, url: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div className="mt-4 col-span-2 flex justify-end">
+                        <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar Senha
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="list">
+                <PasswordList
+                  passwords={passwords}
+                  categories={categories}
+                  groups={groups}
+                  onDelete={handleDeletePassword}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
 
         {activeTab === 'categories' && (
@@ -269,6 +307,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
             groups={groups}
             setGroups={setGroups}
           />
+        )}
+        
+        {activeTab === 'settings' && (
+          <SettingsContent />
         )}
       </div>
     </>

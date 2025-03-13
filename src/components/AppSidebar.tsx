@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { User } from './PasswordVault';
 import { 
   Select,
@@ -9,7 +9,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Lock, Tag, Users, LogOut } from 'lucide-react';
+import { 
+  Lock, 
+  Tag, 
+  Users, 
+  LogOut, 
+  ChevronDown, 
+  ChevronRight, 
+  Settings,
+  FolderCog
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/components/ui/use-toast";
 
@@ -29,6 +38,16 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   handleUserSelect 
 }) => {
   const navigate = useNavigate();
+  const [expandedMenus, setExpandedMenus] = useState<{[key: string]: boolean}>({
+    management: false
+  });
+
+  const toggleMenu = (menu: string) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menu]: !prev[menu]
+    }));
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
@@ -71,6 +90,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
       </div>
       
       <nav className="space-y-1 flex-1 overflow-y-auto">
+        {/* Senhas */}
         <button
           onClick={() => setActiveTab("passwords")}
           className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
@@ -81,27 +101,62 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           <span>Senhas</span>
         </button>
         
+        {/* Gestão - Dropdown */}
+        <div className="border-t border-teal-100 pt-1">
+          <button
+            onClick={() => toggleMenu("management")}
+            className={`w-full flex items-center justify-between gap-2 p-3 rounded-md transition-colors hover:bg-teal-50/50 text-teal-700`}
+          >
+            <div className="flex items-center gap-2">
+              <FolderCog className="h-5 w-5" />
+              <span>Gestão</span>
+            </div>
+            {expandedMenus.management ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+          
+          {expandedMenus.management && (
+            <div className="ml-4 pl-2 border-l border-teal-100 space-y-1">
+              {/* Categorias */}
+              <button
+                onClick={() => setActiveTab("categories")}
+                className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors ${
+                  activeTab === "categories" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+                }`}
+              >
+                <Tag className="h-4 w-4" />
+                <span className="text-sm">Categorias</span>
+              </button>
+              
+              {/* Usuários e Grupos */}
+              {currentUser.role === 'admin' && (
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors ${
+                    activeTab === "users" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  <span className="text-sm">Usuários e Grupos</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Configurações */}
         <button
-          onClick={() => setActiveTab("categories")}
+          onClick={() => setActiveTab("settings")}
           className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
-            activeTab === "categories" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+            activeTab === "settings" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
           }`}
         >
-          <Tag className="h-5 w-5" />
-          <span>Categorias</span>
+          <Settings className="h-5 w-5" />
+          <span>Configurações</span>
         </button>
-        
-        {currentUser.role === 'admin' && (
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
-              activeTab === "users" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
-            }`}
-          >
-            <Users className="h-5 w-5" />
-            <span>Usuários e Grupos</span>
-          </button>
-        )}
       </nav>
       
       <div className="mt-auto text-sm text-teal-700 pt-4 border-t border-teal-100">
