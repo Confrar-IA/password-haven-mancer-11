@@ -7,15 +7,21 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
 import { useState, useEffect } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { StorageFactory } from "./services/storage/StorageFactory";
 
+// Inicializar o cliente de consulta
 const queryClient = new QueryClient();
+
+// Garantir que o StorageFactory seja inicializado
+StorageFactory.getStorage();
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is logged in
+  // Verificar se o usuário está logado
   useEffect(() => {
     const checkAuth = () => {
       const currentUser = localStorage.getItem('currentUser');
@@ -45,6 +51,7 @@ const App = () => {
                 element={isAuthenticated ? <Index /> : <Navigate to="/login" />}
               />
               <Route path="/login" element={<Login />} />
+              <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

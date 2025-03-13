@@ -33,35 +33,37 @@ export class StorageFactory {
   
   // Get currently saved storage type from localStorage
   private static getSavedStorageType(): StorageType {
+    if (typeof window === 'undefined') return 'localStorage';
     const savedType = localStorage.getItem(this.storageTypeKey);
     return (savedType as StorageType) || 'localStorage';
   }
   
   // Save current storage type to localStorage
   private static saveStorageType(type: StorageType): void {
+    if (typeof window === 'undefined') return;
     localStorage.setItem(this.storageTypeKey, type);
   }
 
   // Get currently saved database configuration
   private static getSavedDbConfig(): DatabaseConfig {
+    if (typeof window === 'undefined') return DEFAULT_DB_CONFIG;
     const savedConfig = localStorage.getItem(this.dbConfigKey);
     return savedConfig ? JSON.parse(savedConfig) : DEFAULT_DB_CONFIG;
   }
   
   // Save database configuration to localStorage
   private static saveDbConfig(config: DatabaseConfig): void {
+    if (typeof window === 'undefined') return;
     localStorage.setItem(this.dbConfigKey, JSON.stringify(config));
   }
 
   // Get the current storage type
   public static get currentType(): StorageType {
-    if (typeof window === 'undefined') return 'localStorage';
     return this.getSavedStorageType();
   }
   
   // Get the current database configuration
   public static get dbConfig(): DatabaseConfig {
-    if (typeof window === 'undefined') return DEFAULT_DB_CONFIG;
     return this.getSavedDbConfig();
   }
 
@@ -76,6 +78,16 @@ export class StorageFactory {
   // Switch to a different storage implementation
   public static switchStorage(type: StorageType): StorageInterface {
     try {
+      // Don't try to connect to MySQL if it's not running in a Node.js environment
+      if (type === 'mysql' && typeof window !== 'undefined' && !window.confirm(
+        "AVISO: A conexão MySQL real só funciona em um servidor Node.js. " +
+        "No navegador, estaremos usando uma simulação de MySQL baseada no LocalStorage. " +
+        "Deseja continuar?"
+      )) {
+        // User cancelled the operation
+        return this.instance || this.createStorage('localStorage');
+      }
+      
       this.saveStorageType(type);
       this.instance = this.createStorage(type);
       return this.instance;
@@ -128,6 +140,7 @@ export class StorageFactory {
         return new LocalStorageService();
       case 'mysql':
         try {
+          // Use MySQLStorageService (either real or simulated)
           return new MySQLStorageService(this.dbConfig);
         } catch (error) {
           console.error('Failed to create MySQL storage:', error);

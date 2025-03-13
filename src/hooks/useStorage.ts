@@ -4,33 +4,34 @@ import { StorageFactory, StorageType, DatabaseConfig } from '../services/storage
 import { User, Password, PasswordCategory, PermissionGroup, LogEntry } from '../models/types';
 
 export function useStorage() {
-  // Get the current storage type from StorageFactory
+  // Obter o tipo de armazenamento atual do StorageFactory
   const [storageType, setStorageType] = useState<StorageType>(StorageFactory.currentType);
-  // Get the current database configuration
+  // Obter a configuração atual do banco de dados
   const [dbConfig, setDbConfig] = useState<DatabaseConfig>(StorageFactory.dbConfig);
   
-  // Get the storage instance
+  // Obter a instância de armazenamento
   const storage = StorageFactory.getStorage();
   
-  // Update state when storage type changes
+  // Atualizar estado quando o tipo de armazenamento muda
   useEffect(() => {
     setStorageType(StorageFactory.currentType);
     setDbConfig(StorageFactory.dbConfig);
   }, []);
   
-  // Callback to switch storage type
+  // Callback para mudar o tipo de armazenamento
   const switchStorageType = useCallback((type: StorageType) => {
-    StorageFactory.switchStorage(type);
-    setStorageType(type);
+    const newStorage = StorageFactory.switchStorage(type);
+    setStorageType(StorageFactory.currentType); // Pode ter mudado para localStorage se MySQL falhou
+    return newStorage;
   }, []);
   
-  // Callback to update database configuration
+  // Callback para atualizar a configuração do banco de dados
   const updateDbConfig = useCallback((config: DatabaseConfig) => {
     StorageFactory.updateDbConfig(config);
     setDbConfig(config);
   }, []);
 
-  // Returns the storage API and the ability to switch storage types
+  // Retorna a API de armazenamento e a capacidade de mudar o tipo de armazenamento
   return {
     storage,
     storageType,
