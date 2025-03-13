@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Lock, User } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 // Import the User type from PasswordVault
 import { User as UserType } from '../components/PasswordVault';
@@ -53,7 +54,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <h1 className="text-2xl font-bold text-teal-800">Cofre de Senhas</h1>
@@ -102,7 +103,7 @@ const Login = () => {
             </Button>
           </form>
           
-          {users.length > 0 && (
+          {users.length > 0 ? (
             <div className="mt-8">
               <h3 className="font-medium text-gray-700 mb-2">Usuários Disponíveis:</h3>
               <div className="border rounded-md divide-y">
@@ -117,14 +118,30 @@ const Login = () => {
                   >
                     <div>
                       <div className="font-medium">{user.fullName}</div>
-                      <div className="text-sm text-gray-500">@{user.username}</div>
+                      <div className="text-sm text-gray-600">@{user.username}</div>
+                      {user.role && (
+                        <Badge 
+                          variant={user.role === 'admin' ? 'success' : 'secondary'}
+                          className="mt-1"
+                        >
+                          {user.role}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      Senha: {user.password || 'Não definida'}
+                    <div className="text-sm bg-gray-100 px-2 py-1 rounded flex items-center">
+                      <span className="font-medium">Senha:</span>
+                      <span className="ml-1">{user.password || 'Não definida'}</span>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="mt-8 text-center p-4 border rounded-md bg-gray-50">
+              <p className="text-gray-600">Nenhum usuário encontrado no sistema</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Crie usuários na tela de gerenciamento de usuários
+              </p>
             </div>
           )}
         </CardContent>
