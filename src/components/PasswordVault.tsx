@@ -1,4 +1,3 @@
-
 // Update the User interface to include password
 export interface User {
   id: string;
@@ -70,8 +69,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     groupId: ''
   });
 
+  // Ensure we save to localStorage after initial render
   useEffect(() => {
-    loadFromLocalStorage();
+    // Force run the createAdminUserIfNoneExists function on mount
+    setTimeout(() => {
+      createAdminUserIfNoneExists();
+    }, 100);
   }, []);
 
   useEffect(() => {
@@ -91,8 +94,13 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   }, [users]);
 
   const createAdminUserIfNoneExists = () => {
-    // Create admin user if no users exist
-    if (users.length === 0) {
+    console.log("Checking for admin user...", users);
+    
+    // Check if admin user exists
+    const adminExists = users.some(user => user.username === 'admin');
+    
+    if (!adminExists) {
+      console.log("Creating admin user");
       const adminUser: User = {
         id: 'admin-' + Date.now().toString(),
         username: 'admin',
@@ -102,11 +110,19 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
         groups: []
       };
       
-      setUsers([adminUser]);
+      // Update state
+      const updatedUsers = [...users, adminUser];
+      setUsers(updatedUsers);
+      
+      // Save directly to localStorage
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      
       toast({
         title: "Usuário Administrador Criado",
         description: "Um usuário administrador foi criado automaticamente (admin/admin)",
       });
+    } else {
+      console.log("Admin user already exists");
     }
   };
 
@@ -128,21 +144,27 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
 
     const storedUsers = localStorage.getItem('users');
     if (storedUsers) {
-      const parsedUsers = JSON.parse(storedUsers);
-      setUsers(parsedUsers);
-      
-      // Only create admin if no users exist
-      if (parsedUsers.length === 0) {
-        createAdminUserIfNoneExists();
+      try {
+        const parsedUsers = JSON.parse(storedUsers);
+        setUsers(parsedUsers);
+        console.log("Loaded users from localStorage:", parsedUsers);
+      } catch (error) {
+        console.error("Error parsing users from localStorage:", error);
+        setUsers([]);
       }
     } else {
-      // No users in localStorage, create admin
-      createAdminUserIfNoneExists();
+      console.log("No users found in localStorage");
+      setUsers([]);
     }
 
     if (initialUser) {
       setCurrentUser(initialUser);
     }
+    
+    // Call createAdminUserIfNoneExists after setting users
+    setTimeout(() => {
+      createAdminUserIfNoneExists();
+    }, 100);
   };
 
   const handleAddPassword = () => {
@@ -160,7 +182,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       ...newPassword
     };
 
-    setPasswords([...passwords, passwordEntry]);
+    const updatedPasswords = [...passwords, passwordEntry];
+    setPasswords(updatedPasswords);
+    
+    // Save directly to localStorage
+    localStorage.setItem('passwords', JSON.stringify(updatedPasswords));
+    
     setNewPassword({ title: '', username: '', password: '', url: '', category: '', groupId: '' });
     toast({
       title: "Sucesso",
@@ -169,7 +196,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleDeletePassword = (id: string) => {
-    setPasswords(passwords.filter(password => password.id !== id));
+    const updatedPasswords = passwords.filter(password => password.id !== id);
+    setPasswords(updatedPasswords);
+    
+    // Save directly to localStorage
+    localStorage.setItem('passwords', JSON.stringify(updatedPasswords));
+    
     toast({
       title: "Sucesso",
       description: "Senha removida com sucesso"
@@ -177,7 +209,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleAddCategory = (category: PasswordCategory) => {
-    setCategories([...categories, category]);
+    const updatedCategories = [...categories, category];
+    setCategories(updatedCategories);
+    
+    // Save directly to localStorage
+    localStorage.setItem('categories', JSON.stringify(updatedCategories));
+    
     toast({
       title: "Sucesso",
       description: "Categoria adicionada com sucesso"
@@ -196,7 +233,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       return;
     }
 
-    setCategories(categories.filter(category => category.id !== id));
+    const updatedCategories = categories.filter(category => category.id !== id);
+    setCategories(updatedCategories);
+    
+    // Save directly to localStorage
+    localStorage.setItem('categories', JSON.stringify(updatedCategories));
+    
     toast({
       title: "Sucesso",
       description: "Categoria removida com sucesso"
