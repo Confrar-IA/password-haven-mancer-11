@@ -43,8 +43,8 @@ const Index = () => {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-teal-800">Carregando...</h2>
-          <p className="text-gray-500">Preparando seu cofre de senhas</p>
+          <h2 className="text-xl font-semibold text-teal-800 dark:text-teal-400">Carregando...</h2>
+          <p className="text-gray-500 dark:text-gray-400">Preparando seu cofre de senhas</p>
         </div>
       </div>
     );

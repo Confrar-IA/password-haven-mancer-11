@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Lock, User, UserPlus, LogIn } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 // Import the User type from PasswordVault
 import { User as UserType } from '../components/PasswordVault';
@@ -51,6 +51,8 @@ const Login = () => {
         title: "Login bem-sucedido",
         description: `Bem-vindo, ${user.fullName}!`,
       });
+      // Dispatch a custom event to notify other components about auth change
+      window.dispatchEvent(new Event('auth-change'));
       navigate('/');
     } else {
       toast({
@@ -122,11 +124,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <Card className="w-full max-w-md shadow-lg dark:border-gray-700">
         <CardHeader className="text-center">
-          <h1 className="text-2xl font-bold text-teal-800">Cofre de Senhas</h1>
-          <p className="text-gray-500">Gerencie suas senhas com segurança</p>
+          <h1 className="text-2xl font-bold text-teal-800 dark:text-teal-300">Cofre de Senhas</h1>
+          <p className="text-gray-500 dark:text-gray-400">Gerencie suas senhas com segurança</p>
         </CardHeader>
         
         <Tabs defaultValue="login" className="w-full">
@@ -179,7 +184,7 @@ const Login = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-teal-700 hover:bg-teal-800"
+                  className="w-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700"
                 >
                   Entrar
                 </Button>
@@ -234,7 +239,7 @@ const Login = () => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full bg-teal-700 hover:bg-teal-800"
+                  className="w-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700"
                 >
                   Cadastrar
                 </Button>
@@ -245,12 +250,12 @@ const Login = () => {
         
         {users.length > 0 && (
           <CardFooter className="flex flex-col">
-            <h3 className="font-medium text-gray-700 mb-2">Usuários Disponíveis:</h3>
-            <div className="border rounded-md divide-y w-full">
+            <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Usuários Disponíveis:</h3>
+            <div className="border rounded-md divide-y w-full dark:border-gray-700 dark:divide-gray-700">
               {users.map((user) => (
                 <div 
                   key={user.id} 
-                  className="p-3 hover:bg-gray-50 cursor-pointer flex justify-between"
+                  className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer flex justify-between"
                   onClick={() => {
                     setUsername(user.username);
                     setPassword(user.password || '');
@@ -258,9 +263,9 @@ const Login = () => {
                 >
                   <div>
                     <div className="font-medium">{user.fullName}</div>
-                    <div className="text-sm text-gray-500">@{user.username}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</div>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     Senha: {user.password || 'Não definida'}
                   </div>
                 </div>

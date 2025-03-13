@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { useState, useEffect } from "react";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 const queryClient = new QueryClient();
 
@@ -23,29 +24,33 @@ const App = () => {
 
     checkAuth();
     window.addEventListener('storage', checkAuth);
+    window.addEventListener('auth-change', checkAuth);
 
     return () => {
       window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('auth-change', checkAuth);
     };
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route 
-              path="/" 
-              element={isAuthenticated ? <Index /> : <Navigate to="/login" />}
-            />
-            <Route path="/login" element={<Login />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route 
+                path="/" 
+                element={isAuthenticated ? <Index /> : <Navigate to="/login" />}
+              />
+              <Route path="/login" element={<Login />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

@@ -92,8 +92,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   }, [users]);
 
   const loadFromLocalStorage = () => {
-    // ... keep existing code (loading data from localStorage)
-    
     const storedPasswords = localStorage.getItem('passwords');
     if (storedPasswords) {
       setPasswords(JSON.parse(storedPasswords));
@@ -120,8 +118,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleAddPassword = () => {
-    // ... keep existing code (add password functionality)
-    
     if (!newPassword.title || !newPassword.username || !newPassword.password) {
       toast({
         title: "Erro",
@@ -143,13 +139,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       description: "Senha adicionada com sucesso"
     });
     
-    // After adding a password, switch to list view
     setPasswordTab('list');
   };
 
   const handleDeletePassword = (id: string) => {
-    // ... keep existing code (delete password functionality)
-    
     setPasswords(passwords.filter(password => password.id !== id));
     toast({
       title: "Sucesso",
@@ -158,8 +151,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleAddCategory = (category: PasswordCategory) => {
-    // ... keep existing code (add category functionality)
-    
     setCategories([...categories, category]);
     toast({
       title: "Sucesso",
@@ -168,9 +159,6 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   };
 
   const handleDeleteCategory = (id: string) => {
-    // ... keep existing code (delete category functionality)
-    
-    // Check if any passwords are using this category
     const passwordsWithCategory = passwords.filter(password => password.category === id);
     if (passwordsWithCategory.length > 0) {
       toast({
@@ -192,13 +180,12 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     setCurrentUser(user);
   };
 
-  // Simple settings component
   const SettingsContent = () => (
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
           <h2 className="text-2xl font-semibold mb-4">Configurações</h2>
-          <p className="text-gray-500">Opções de configuração estarão disponíveis em breve.</p>
+          <p className="text-gray-500 dark:text-gray-400">Opções de configuração estarão disponíveis em breve.</p>
         </CardContent>
       </Card>
     </div>
@@ -213,7 +200,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
         users={users}
         handleUserSelect={handleUserSelect}
       />
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
         {activeTab === 'passwords' && (
           <div className="space-y-6">
             <Tabs value={passwordTab} onValueChange={setPasswordTab} className="w-full">
@@ -270,7 +257,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                       </div>
                       
                       <div className="mt-4 col-span-2 flex justify-end">
-                        <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800">
+                        <Button onClick={handleAddPassword} className="bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700">
                           <Plus className="h-4 w-4 mr-2" />
                           Adicionar Senha
                         </Button>

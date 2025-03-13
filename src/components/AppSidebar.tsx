@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/components/ui/use-toast";
+import { ThemeToggle } from './ThemeToggle';
 
 interface AppSidebarProps {
   activeTab: string;
@@ -55,14 +56,19 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
       title: "Logout realizado",
       description: "Você foi desconectado com sucesso",
     });
+    // Dispatch a custom event to notify other components about auth change
+    window.dispatchEvent(new Event('auth-change'));
     navigate('/login');
   };
 
   return (
-    <div className="w-64 bg-white text-teal-800 h-screen p-4 flex flex-col overflow-hidden">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-teal-800 mb-1">Cofre de Senhas</h1>
-        <p className="text-teal-600 text-sm">Gerencie suas senhas com segurança</p>
+    <div className="w-64 bg-white dark:bg-gray-900 text-teal-800 dark:text-teal-300 h-screen p-4 flex flex-col overflow-hidden">
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-teal-800 dark:text-teal-300 mb-1">Cofre de Senhas</h1>
+          <p className="text-teal-600 dark:text-teal-400 text-sm">Gerencie suas senhas com segurança</p>
+        </div>
+        <ThemeToggle />
       </div>
       
       <div className="mb-6">
@@ -73,7 +79,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
             if (selectedUser) handleUserSelect(selectedUser);
           }}
         >
-          <SelectTrigger className="bg-teal-50 border-teal-200 text-teal-800">
+          <SelectTrigger className="bg-teal-50 dark:bg-gray-800 border-teal-200 dark:border-gray-700 text-teal-800 dark:text-teal-300">
             <SelectValue placeholder="Selecionar usuário" />
           </SelectTrigger>
           <SelectContent>
@@ -84,7 +90,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
             ))}
           </SelectContent>
         </Select>
-        <div className="mt-2 text-sm text-teal-600">
+        <div className="mt-2 text-sm text-teal-600 dark:text-teal-400">
           Logado como: <span className="font-medium">{currentUser.fullName}</span>
         </div>
       </div>
@@ -94,7 +100,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         <button
           onClick={() => setActiveTab("passwords")}
           className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
-            activeTab === "passwords" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+            activeTab === "passwords" 
+              ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
+              : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
           }`}
         >
           <Lock className="h-5 w-5" />
@@ -102,10 +110,10 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         </button>
         
         {/* Gestão - Dropdown */}
-        <div className="border-t border-teal-100 pt-1">
+        <div className="border-t border-teal-100 dark:border-gray-700 pt-1">
           <button
             onClick={() => toggleMenu("management")}
-            className={`w-full flex items-center justify-between gap-2 p-3 rounded-md transition-colors hover:bg-teal-50/50 text-teal-700`}
+            className={`w-full flex items-center justify-between gap-2 p-3 rounded-md transition-colors hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400`}
           >
             <div className="flex items-center gap-2">
               <FolderCog className="h-5 w-5" />
@@ -119,12 +127,14 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
           </button>
           
           {expandedMenus.management && (
-            <div className="ml-4 pl-2 border-l border-teal-100 space-y-1">
+            <div className="ml-4 pl-2 border-l border-teal-100 dark:border-gray-700 space-y-1">
               {/* Categorias */}
               <button
                 onClick={() => setActiveTab("categories")}
                 className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors ${
-                  activeTab === "categories" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+                  activeTab === "categories" 
+                    ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
+                    : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
                 }`}
               >
                 <Tag className="h-4 w-4" />
@@ -136,7 +146,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 <button
                   onClick={() => setActiveTab("users")}
                   className={`w-full flex items-center gap-2 p-2 rounded-md transition-colors ${
-                    activeTab === "users" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+                    activeTab === "users" 
+                      ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
+                      : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
                   }`}
                 >
                   <Users className="h-4 w-4" />
@@ -151,7 +163,9 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         <button
           onClick={() => setActiveTab("settings")}
           className={`w-full flex items-center gap-2 p-3 rounded-md transition-colors ${
-            activeTab === "settings" ? "bg-teal-50 text-teal-800" : "hover:bg-teal-50/50 text-teal-700"
+            activeTab === "settings" 
+              ? "bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300" 
+              : "hover:bg-teal-50/50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-400"
           }`}
         >
           <Settings className="h-5 w-5" />
@@ -159,15 +173,15 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
         </button>
       </nav>
       
-      <div className="mt-auto text-sm text-teal-700 pt-4 border-t border-teal-100">
+      <div className="mt-auto text-sm text-teal-700 dark:text-teal-400 pt-4 border-t border-teal-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white font-medium">
+            <div className="h-8 w-8 rounded-full bg-teal-600 dark:bg-teal-700 flex items-center justify-center text-white font-medium">
               {currentUser.fullName.charAt(0).toUpperCase()}
             </div>
             <div>
               <div className="font-medium">{currentUser.fullName}</div>
-              <div className="text-teal-600 text-xs">
+              <div className="text-teal-600 dark:text-teal-400 text-xs">
                 {currentUser.role === 'admin' ? 'Administrador' : 'Usuário Regular'}
               </div>
             </div>
@@ -176,7 +190,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
             variant="ghost" 
             size="icon" 
             onClick={handleLogout}
-            className="text-teal-700 hover:text-red-500 hover:bg-red-50"
+            className="text-teal-700 dark:text-teal-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <LogOut className="h-5 w-5" />
           </Button>
