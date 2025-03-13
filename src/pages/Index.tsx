@@ -39,6 +39,21 @@ const Index = () => {
     }
   }, [navigate]);
 
+  // Add listener for logout events
+  useEffect(() => {
+    const handleUserLogout = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('User logged out:', customEvent.detail);
+      // You can add additional cleanup logic here if needed
+    };
+
+    window.addEventListener('user-logout', handleUserLogout);
+    
+    return () => {
+      window.removeEventListener('user-logout', handleUserLogout);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">

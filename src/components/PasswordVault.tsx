@@ -31,6 +31,16 @@ export interface PermissionGroup {
   description: string;
 }
 
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  action: 'login' | 'logout' | 'create' | 'update' | 'delete';
+  entityType: 'password' | 'user' | 'category' | 'group';
+  entityId: string;
+  description: string;
+  userId: string;
+}
+
 import React, { useState, useEffect, useCallback } from 'react';
 import PasswordList from './PasswordList';
 import AppSidebar from './AppSidebar';
@@ -61,6 +71,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   const [categories, setCategories] = useState<PasswordCategory[]>([]);
   const [groups, setGroups] = useState<PermissionGroup[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [activeTab, setActiveTab] = useState('passwords');
   const [passwordTab, setPasswordTab] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,6 +104,25 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
   };
 
+  // Log action function
+  const logAction = useCallback((action: LogEntry['action'], entityType: LogEntry['entityType'], entityId: string, description: string) => {
+    const logEntry: LogEntry = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      action,
+      entityType,
+      entityId,
+      description,
+      userId: currentUser.id
+    };
+    
+    setLogs(prevLogs => {
+      const newLogs = [...prevLogs, logEntry];
+      localStorage.setItem('logs', JSON.stringify(newLogs));
+      return newLogs;
+    });
+  }, [currentUser.id]);
+
   useEffect(() => {
     loadFromLocalStorage();
   }, []);
@@ -112,6 +142,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
   useEffect(() => {
     localStorage.setItem('users', JSON.stringify(users));
   }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('logs', JSON.stringify(logs));
+  }, [logs]);
 
   // Apply filtering whenever search parameters or passwords change
   useEffect(() => {
@@ -160,8 +194,32 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
       setUsers(JSON.parse(storedUsers));
     }
 
+    const storedLogs = localStorage.getItem('logs');
+    if (storedLogs) {
+      setLogs(JSON.parse(storedLogs));
+    }
+
     if (initialUser) {
       setCurrentUser(initialUser);
+      
+      // Log login action
+      setTimeout(() => {
+        const logEntry: LogEntry = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          action: 'login',
+          entityType: 'user',
+          entityId: initialUser.id,
+          description: `Login: ${initialUser.username}`,
+          userId: initialUser.id
+        };
+        
+        setLogs(prevLogs => {
+          const newLogs = [...prevLogs, logEntry];
+          localStorage.setItem('logs', JSON.stringify(newLogs));
+          return newLogs;
+        });
+      }, 500);
     }
   };
 
@@ -182,6 +240,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     };
 
     setPasswords(prev => [...prev, passwordEntry]);
+    
+    // Log password creation
+    logAction('create', 'password', passwordEntry.id, `Nova senha criada: ${passwordEntry.title}`);
+    
     setNewPassword({ title: '', username: '', password: '', url: '', category: '', groupId: '' });
     toast({
       title: "Sucesso",
@@ -189,7 +251,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
     
     setPasswordTab('list');
-  }, [newPassword]);
+  }, [newPassword, logAction]);
 
   // Using useCallback for handleEditPassword as well
   const handleEditPassword = useCallback(() => {
@@ -203,6 +265,10 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     }
 
     setPasswords(passwords.map(pwd => pwd.id === editingPassword.id ? editingPassword : pwd));
+    
+    // Log password update
+    logAction('update', 'password', editingPassword.id, `Senha atualizada: ${editingPassword.title}`);
+    
     setEditingPassword(null);
     toast({
       title: "Sucesso",
@@ -210,15 +276,22 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     });
     
     setPasswordTab('list');
-  }, [editingPassword, passwords]);
+  }, [editingPassword, passwords, logAction]);
 
-  const handleDeletePassword = (id: string) => {
+  const handleDeletePassword = useCallback((id: string) => {
+    const passwordToDelete = passwords.find(p => p.id === id);
     setPasswords(passwords.filter(password => password.id !== id));
+    
+    // Log password deletion
+    if (passwordToDelete) {
+      logAction('delete', 'password', id, `Senha excluída: ${passwordToDelete.title}`);
+    }
+    
     toast({
       title: "Sucesso",
       description: "Senha removida com sucesso"
     });
-  };
+  }, [passwords, logAction]);
 
   const handleEditPasswordClick = (password: Password) => {
     setEditingPassword(password);
@@ -392,7 +465,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem key="all-categories" value="all-categories">Todas as categorias</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -412,7 +485,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
                 <SelectValue placeholder="Todos os grupos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os grupos</SelectItem>
+                <SelectItem key="all-groups" value="all-groups">Todos os grupos</SelectItem>
                 {groups.map(group => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
@@ -445,7 +518,7 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
         users={users}
         handleUserSelect={handleUserSelect}
       />
-      <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+      <div className="flex-1 overflow-y-auto p-6 bg-background text-foreground">
         {activeTab === 'passwords' && (
           <div className="space-y-6">
             <Tabs value={passwordTab} onValueChange={setPasswordTab} className="w-full">
@@ -491,7 +564,71 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
             setGroups={setGroups} 
             categories={categories} 
             setCategories={setCategories} 
+            logs={logs}
+            logAction={logAction}
           />
+        )}
+        
+        {activeTab === 'logs' && currentUser.role === 'admin' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-semibold mb-4">Logs do Sistema</h2>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-muted/50 border-b">
+                        <th className="p-2 text-left">Data/Hora</th>
+                        <th className="p-2 text-left">Usuário</th>
+                        <th className="p-2 text-left">Ação</th>
+                        <th className="p-2 text-left">Descrição</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                            Nenhum log encontrado
+                          </td>
+                        </tr>
+                      ) : (
+                        logs
+                          .sort((a, b) => b.timestamp - a.timestamp)
+                          .map(log => {
+                            const user = users.find(u => u.id === log.userId) || { fullName: 'Sistema', username: 'system' };
+                            
+                            return (
+                              <tr key={log.id} className="border-b hover:bg-muted/50">
+                                <td className="p-2">
+                                  {new Date(log.timestamp).toLocaleString('pt-BR')}
+                                </td>
+                                <td className="p-2">{user.fullName}</td>
+                                <td className="p-2">
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${
+                                    log.action === 'login' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                    log.action === 'logout' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                    log.action === 'create' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                    log.action === 'update' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                  }`}>
+                                    {log.action === 'login' ? 'Login' :
+                                     log.action === 'logout' ? 'Logout' :
+                                     log.action === 'create' ? 'Criação' :
+                                     log.action === 'update' ? 'Atualização' :
+                                     'Exclusão'}
+                                  </span>
+                                </td>
+                                <td className="p-2">{log.description}</td>
+                              </tr>
+                            );
+                          })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
         
         {activeTab === 'settings' && (

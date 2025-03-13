@@ -16,7 +16,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, Key, Cog, Users } from 'lucide-react';
+import { Settings, LogOut, Key, Cog, Users, FileText } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface AppSidebarProps {
@@ -37,6 +37,12 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Create a custom event to log the logout action
+    const logoutEvent = new CustomEvent('user-logout', {
+      detail: { userId: currentUser.id, username: currentUser.username }
+    });
+    window.dispatchEvent(logoutEvent);
+    
     localStorage.removeItem('currentUser');
     toast({
       title: "Logout realizado",
@@ -96,6 +102,26 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
                 </TooltipTrigger>
                 <TooltipContent side="right" className="md:hidden">
                   Gerenciamento
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {currentUser.role === 'admin' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={activeTab === 'logs' ? 'secondary' : 'ghost'}
+                    className="w-full justify-start text-left"
+                    onClick={() => setActiveTab('logs')}
+                  >
+                    <FileText className="h-5 w-5 mr-2" />
+                    <span className="hidden md:inline">Logs</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="md:hidden">
+                  Logs
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
