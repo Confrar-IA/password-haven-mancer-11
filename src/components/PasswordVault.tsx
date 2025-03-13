@@ -1,3 +1,4 @@
+
 // Update the User interface to include password
 export interface User {
   id: string;
@@ -89,6 +90,26 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
     localStorage.setItem('users', JSON.stringify(users));
   }, [users]);
 
+  const createAdminUserIfNoneExists = () => {
+    // Create admin user if no users exist
+    if (users.length === 0) {
+      const adminUser: User = {
+        id: 'admin-' + Date.now().toString(),
+        username: 'admin',
+        password: 'admin',
+        fullName: 'Administrador',
+        role: 'admin',
+        groups: []
+      };
+      
+      setUsers([adminUser]);
+      toast({
+        title: "Usuário Administrador Criado",
+        description: "Um usuário administrador foi criado automaticamente (admin/admin)",
+      });
+    }
+  };
+
   const loadFromLocalStorage = () => {
     const storedPasswords = localStorage.getItem('passwords');
     if (storedPasswords) {
@@ -107,7 +128,16 @@ const PasswordVault: React.FC<PasswordVaultProps> = ({ initialUser }) => {
 
     const storedUsers = localStorage.getItem('users');
     if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
+      const parsedUsers = JSON.parse(storedUsers);
+      setUsers(parsedUsers);
+      
+      // Only create admin if no users exist
+      if (parsedUsers.length === 0) {
+        createAdminUserIfNoneExists();
+      }
+    } else {
+      // No users in localStorage, create admin
+      createAdminUserIfNoneExists();
     }
 
     if (initialUser) {
