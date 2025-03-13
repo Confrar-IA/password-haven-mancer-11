@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, PermissionGroup } from './PasswordVault';
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,12 +63,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       ...newUser
     };
 
-    const updatedUsers = [...users, userEntry];
-    
-    // Update state and save to localStorage
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
+    setUsers([...users, userEntry]);
     setNewUser({ username: '', fullName: '', role: 'user', groups: [], password: '' });
     toast({
       title: "Sucesso",
@@ -85,12 +81,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       return;
     }
 
-    const updatedUsers = users.map(user => user.id === editingUser.id ? editingUser : user);
-    
-    // Update state and save to localStorage
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
+    setUsers(users.map(user => user.id === editingUser.id ? editingUser : user));
     setEditingUser(null);
     toast({
       title: "Sucesso",
@@ -113,12 +104,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       ...newGroup
     };
 
-    const updatedGroups = [...groups, groupEntry];
-    
-    // Update state and save to localStorage
-    setGroups(updatedGroups);
-    localStorage.setItem('groups', JSON.stringify(updatedGroups));
-    
+    setGroups([...groups, groupEntry]);
     setNewGroup({ name: '', description: '' });
     toast({
       title: "Sucesso",
@@ -136,12 +122,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       return;
     }
 
-    const updatedGroups = groups.map(group => group.id === editingGroup.id ? editingGroup : group);
-    
-    // Update state and save to localStorage
-    setGroups(updatedGroups);
-    localStorage.setItem('groups', JSON.stringify(updatedGroups));
-    
+    setGroups(groups.map(group => group.id === editingGroup.id ? editingGroup : group));
     setEditingGroup(null);
     toast({
       title: "Sucesso",
@@ -150,12 +131,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
   };
 
   const handleRemoveUser = (userId: string) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
-    
-    // Update state and save to localStorage
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
+    setUsers(users.filter(user => user.id !== userId));
     toast({
       title: "Sucesso",
       description: "Usuário removido com sucesso"
@@ -174,12 +150,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
       return;
     }
     
-    const updatedGroups = groups.filter(group => group.id !== groupId);
-    
-    // Update state and save to localStorage
-    setGroups(updatedGroups);
-    localStorage.setItem('groups', JSON.stringify(updatedGroups));
-    
+    setGroups(groups.filter(group => group.id !== groupId));
     toast({
       title: "Sucesso",
       description: "Grupo removido com sucesso"
@@ -187,7 +158,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
   };
 
   const handleToggleGroupForUser = (userId: string, groupId: string) => {
-    const updatedUsers = users.map(user => {
+    setUsers(users.map(user => {
       if (user.id === userId) {
         const newGroups = user.groups.includes(groupId)
           ? user.groups.filter(g => g !== groupId)
@@ -196,11 +167,7 @@ const UserManager: React.FC<UserManagerProps> = ({ users, setUsers, groups, setG
         return { ...user, groups: newGroups };
       }
       return user;
-    });
-    
-    // Update state and save to localStorage
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    }));
   };
 
   return (
