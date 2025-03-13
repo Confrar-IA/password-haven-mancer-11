@@ -30,7 +30,7 @@ export class MySQLStorageService implements StorageInterface {
   }
   
   // Check if we can connect to the real MySQL server
-  private async checkServerConnection(): Promise<boolean> {
+  async checkServerConnection(): Promise<boolean> {
     if (typeof window === 'undefined') {
       // Node.js environment - assume real connection
       return true;
@@ -169,6 +169,22 @@ export class MySQLStorageService implements StorageInterface {
     }
   }
   
+  // Optional method implementation
+  async getUserByUsername(username: string): Promise<User | null> {
+    if (this.simulation) {
+      const users = this.getTable<User>(this.tables.users);
+      return users.find(user => user.username === username) || null;
+    }
+    
+    try {
+      return await this.apiRequest<User>(`/users/username/${username}`);
+    } catch (error) {
+      // Fallback to simulation
+      const users = this.getTable<User>(this.tables.users);
+      return users.find(user => user.username === username) || null;
+    }
+  }
+  
   async updateUser(id: string, userData: Partial<User>): Promise<User> {
     if (this.simulation) {
       const users = this.getTable<User>(this.tables.users);
@@ -252,7 +268,7 @@ export class MySQLStorageService implements StorageInterface {
       id: uuidv4(),
       ...passwordData,
       created: new Date().toISOString(),
-      updated: new Date().toISOString(),
+      updated: new Date().toISOString()
     };
     
     if (this.simulation) {
@@ -388,6 +404,22 @@ export class MySQLStorageService implements StorageInterface {
       return this.getTable<PasswordCategory>(this.tables.categories);
     }
   }
+
+  // Optional method implementation
+  async getCategoryById(id: string): Promise<PasswordCategory | null> {
+    if (this.simulation) {
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      return categories.find(category => category.id === id) || null;
+    }
+    
+    try {
+      return await this.apiRequest<PasswordCategory>(`/categories/${id}`);
+    } catch (error) {
+      // Fallback to simulation
+      const categories = this.getTable<PasswordCategory>(this.tables.categories);
+      return categories.find(category => category.id === id) || null;
+    }
+  }
   
   async createCategory(categoryData: Omit<PasswordCategory, 'id'>): Promise<PasswordCategory> {
     const newCategory: PasswordCategory = {
@@ -488,6 +520,22 @@ export class MySQLStorageService implements StorageInterface {
     } catch (error) {
       // Fallback to simulation
       return this.getTable<PermissionGroup>(this.tables.groups);
+    }
+  }
+
+  // Optional method implementation
+  async getGroupById(id: string): Promise<PermissionGroup | null> {
+    if (this.simulation) {
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      return groups.find(group => group.id === id) || null;
+    }
+    
+    try {
+      return await this.apiRequest<PermissionGroup>(`/groups/${id}`);
+    } catch (error) {
+      // Fallback to simulation
+      const groups = this.getTable<PermissionGroup>(this.tables.groups);
+      return groups.find(group => group.id === id) || null;
     }
   }
   
@@ -597,7 +645,7 @@ export class MySQLStorageService implements StorageInterface {
     const newLog: LogEntry = {
       id: uuidv4(),
       ...logData,
-      timestamp: new Date().toISOString()
+      timestamp: logData.timestamp || new Date().toISOString()
     };
     
     if (this.simulation) {
@@ -693,7 +741,7 @@ export class MySQLStorageService implements StorageInterface {
   }
   
   async logout(): Promise<void> {
-    const currentUser = this.getCurrentUser();
+    const currentUser = await this.getCurrentUser();
     
     if (currentUser) {
       // Create log entry
@@ -721,7 +769,7 @@ export class MySQLStorageService implements StorageInterface {
     }
   }
   
-  getCurrentUser(): User | null {
+  async getCurrentUser(): Promise<User | null> {
     const userData = localStorage.getItem('currentUser');
     return userData ? JSON.parse(userData) : null;
   }

@@ -1,3 +1,4 @@
+
 // Export shared types from PasswordVault
 export interface User {
   id: string;
@@ -6,7 +7,9 @@ export interface User {
   role: 'admin' | 'user';
   groups: string[];
   password?: string;
-  active?: boolean; // New field to indicate if user is active or disabled
+  active?: boolean;
+  lastLogin?: string | null;
+  created?: string;
 }
 
 export interface Password {
@@ -17,6 +20,8 @@ export interface Password {
   url?: string;
   category?: string;
   groupId: string;
+  created?: string;
+  updated?: string;
 }
 
 export interface PasswordCategory {
@@ -33,10 +38,11 @@ export interface PermissionGroup {
 
 export interface LogEntry {
   id: string;
-  timestamp: number;
+  timestamp: string;
   action: 'login' | 'logout' | 'create' | 'update' | 'delete';
-  entityType: 'password' | 'user' | 'category' | 'group';
-  entityId: string;
-  description: string;
+  entityType?: 'password' | 'user' | 'category' | 'group';
+  entityId?: string;
+  description?: string;
+  details?: string;
   userId: string;
 }

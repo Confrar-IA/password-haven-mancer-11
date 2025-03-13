@@ -1,43 +1,45 @@
 
 import { User, Password, PasswordCategory, PermissionGroup, LogEntry } from '../../models/types';
 
-// Interface that defines storage operations
 export interface StorageInterface {
   // User operations
   getUsers(): Promise<User[]>;
   getUserById(id: string): Promise<User | null>;
-  getUserByUsername(username: string): Promise<User | null>;
-  createUser(user: Omit<User, 'id'>): Promise<User>;
-  updateUser(id: string, user: Partial<User>): Promise<User>;
+  getUserByUsername?(username: string): Promise<User | null>;
+  createUser(userData: Omit<User, 'id'>): Promise<User>;
+  updateUser(id: string, userData: Partial<User>): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
   
   // Password operations
   getPasswords(): Promise<Password[]>;
   getPasswordById(id: string): Promise<Password | null>;
-  createPassword(password: Omit<Password, 'id'>): Promise<Password>;
-  updatePassword(id: string, password: Partial<Password>): Promise<Password>;
+  createPassword(passwordData: Omit<Password, 'id'>): Promise<Password>;
+  updatePassword(id: string, passwordData: Partial<Password>): Promise<Password>;
   deletePassword(id: string): Promise<boolean>;
   
   // Category operations
   getCategories(): Promise<PasswordCategory[]>;
-  getCategoryById(id: string): Promise<PasswordCategory | null>;
-  createCategory(category: Omit<PasswordCategory, 'id'>): Promise<PasswordCategory>;
-  updateCategory(id: string, category: Partial<PasswordCategory>): Promise<PasswordCategory>;
+  getCategoryById?(id: string): Promise<PasswordCategory | null>;
+  createCategory(categoryData: Omit<PasswordCategory, 'id'>): Promise<PasswordCategory>;
+  updateCategory(id: string, categoryData: Partial<PasswordCategory>): Promise<PasswordCategory>;
   deleteCategory(id: string): Promise<boolean>;
   
   // Group operations
   getGroups(): Promise<PermissionGroup[]>;
-  getGroupById(id: string): Promise<PermissionGroup | null>;
-  createGroup(group: Omit<PermissionGroup, 'id'>): Promise<PermissionGroup>;
-  updateGroup(id: string, group: Partial<PermissionGroup>): Promise<PermissionGroup>;
+  getGroupById?(id: string): Promise<PermissionGroup | null>;
+  createGroup(groupData: Omit<PermissionGroup, 'id'>): Promise<PermissionGroup>;
+  updateGroup(id: string, groupData: Partial<PermissionGroup>): Promise<PermissionGroup>;
   deleteGroup(id: string): Promise<boolean>;
   
   // Log operations
   getLogs(): Promise<LogEntry[]>;
-  createLog(log: Omit<LogEntry, 'id'>): Promise<LogEntry>;
+  createLog(logData: Omit<LogEntry, 'id'>): Promise<LogEntry>;
   
   // Authentication
-  login(username: string, password: string): Promise<User | null>;
-  getCurrentUser(): Promise<User | null>;
+  login(username: string, password: string): Promise<User>;
   logout(): Promise<void>;
+  getCurrentUser(): Promise<User | null>;
+  
+  // Server connection
+  checkServerConnection?(): Promise<boolean>;
 }
